@@ -195,7 +195,9 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
      */
     function _process($values)
     {
+    	  error_log("---------------------------------- Going to save files");
         if ($this->_saveFile($values)) {
+        	   error_log("--------------------------- Save file worked");
             $this->message->addMessage("Setting up variables \n");
 
             ///////////////////////////////////////////////////////////////////
@@ -238,10 +240,12 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
             );
 
             ///if the candid, pscid, and visit_label are inserted
+            error_log("---- Candid is $candid, pscidis $pscid, visit_label is $visit_label");
             if ((!empty($candid))
                 && (!empty($pscid))
                 && (!empty($visit_label))
             ) {
+            	error_log("--------------------------------------------- All info not empty");
 
                 ///////////////////////////////////////////////////////////////
                 ///////////////changes the log file-name///////////////////////
@@ -285,18 +289,22 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
                 list($tarchive_id,$ArchiveLocation)
                     = $this->insertDicom($decompressed_folder, $source_location);
 
-                ///////////////////////////////////////////////////////////////
-                //////////////////////RUN the batchupload//////////////////////
-                ///////////////////////////////////////////////////////////////
+               ///////////////////////////////////////////////////////////////////
+                //////////////////////RUN the batchupload//////////////////////////
+                ///////////////////////////////////////////////////////////////////
+                error_log("-------------------- Going to batch upload");
                 if ($tarchive_id) {
+                	  error_log("---------------------- Value of tarchive_id is $tarchive_id");
                     $this->runBatchUpload(
                         $ArchiveLocation,
                         $patient_name
                     );
                 }
+                error_log("---------------------------------- Looks like we are done");
                 $this->tpl_data['upload_success'] = true;
             }
         }
+        error_log("------------------------------ Leaving subroutine process");
     }
 
     // methods available to all children
@@ -351,6 +359,7 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
         if (!empty($file->errorLog)) {
             while (list($fileType,$fileErrors)=each($file->errorLog)) {
                 foreach ($fileErrors AS $error) {
+                	  error_log("$fileType : $error");
                     echo "<span style='color:red'><b>Upload Error</b>
                     $fileType: $error</span><br>";
                 }
@@ -499,6 +508,11 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
                     $file_type = $this->runCommand("file $file");
 
                     ///////////////////////////////////////////////////////////
+                    /////////////// Ignore empty files ////////////////////////
+                    ///////////////////////////////////////////////////////////
+                    if(preg_match("/empty$/", $file_type))
+                        continue;
+                    ///////////////////////////////////////////////////////////
                     /////////////// check if it's readable/////////////////////
                     ///////////////////////////////////////////////////////////
                     if (!is_readable($file)) {
@@ -578,6 +592,13 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
             ///////////////remove the  temp_folder/////////////////////////////
             ///////////////////////////////////////////////////////////////////
             if (is_dir($temp_dir)) {
+            	 $files_to_delete = glob( $temp_dir . '*', GLOB_MARK ); //GLOB_MARK adds a slash to directories returned
+        
+                foreach($files_to_delete as $file_to_delete)
+                {
+                    unlink($file_to_delete);        
+                }
+
                 rmdir($temp_dir);
             }
 
@@ -776,7 +797,8 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
 
         $this->message->addMessage("Running DICOM \n");
         $output = $this->runCommand($cmd);
-
+        error_log($output);
+        
         if ($this->show_queries) {
             print "cmd : $cmd \n";
             print $output;
@@ -898,7 +920,7 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
                 }
            
                 ////get the minc-data after running the batch_upload//
-                $minc_data_count = $this->getMincData($candid,$visit_label);
+                $minc_data_count = $this->getMincDataCount($candid,$visit_label);
                 
                 ////////////////////////////////////////////////////////////
                 //if the batch_upload command has executed correctly////////
@@ -918,7 +940,7 @@ class NDB_Menu_Filter_Mri_Upload extends NDB_Menu_Filter_Form
                     $this->tpl_data['minc_success'] = true;
                     return true;
                 }
-            }
+           }
             return false;
     }
 
