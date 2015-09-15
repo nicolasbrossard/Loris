@@ -1,14 +1,13 @@
 <?php
-
 /**
- * admin_config class file
+ * The configuration module is used to manage the configuration of Loris.
  *
  * PHP version 5
- * 
+ *
  * @category Behavioural
- * @package  Main 
- * @author   Olga Tsibulevskaya <olgatsib@gmail.com> 
- * @license  GPLv3
+ * @package  Main
+ * @author   Olga Tsibulevskaya <olgatsib@gmail.com>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
  * @link     https://github.com/aces/Loris-Trunk
 */
 
@@ -18,11 +17,11 @@ require_once 'NDB_Form.class.inc';
  * Admin_Config Class
  *
  * This class is to configure the system settings
- * 
+ *
  * @category Behavioural
- * @package  Main 
- * @author   Olga Tsibulevskaya <olgatsib@gmail.com> 
- * @license  GPLv3
+ * @package  Main
+ * @author   Olga Tsibulevskaya <olgatsib@gmail.com>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
  * @link     https://github.com/aces/Loris-Trunk
 */
 class NDB_Form_Configuration extends NDB_Form
@@ -48,9 +47,11 @@ class NDB_Form_Configuration extends NDB_Form
      *
      * @return null
      */
-
     function configuration()
     {
+
+        $config =& NDB_Config::singleton();
+
         $this->DB = Database::singleton();
         if (Utility::isErrorX($this->DB)) {
             return PEAR::raiseError(
@@ -59,8 +60,15 @@ class NDB_Form_Configuration extends NDB_Form
             die();
         }
 
+        $parentMenuItems = $this->DB->pselect(
+            "SELECT Label, Name 
+             FROM ConfigSettings 
+             WHERE Parent IS NULL AND Visible=1 ORDER BY OrderNumber",
+            array()
+        );
+
         $configs = $this->DB->pselect(
-            "SELECT * FROM ConfigSettings", 
+            "SELECT * FROM ConfigSettings WHERE Visible=1 ORDER BY OrderNumber",
             array()
         );
 
@@ -77,42 +85,55 @@ class NDB_Form_Configuration extends NDB_Form
             }
         }
 
-        // need a subtree with root = NULL only, others are repeating branches
-        $this->tpl_data['config'] = $configs;
-        $this->tpl_data['options'] = array('0'=>'0', '1'=>'1');
+        // build a tree from configs array
+        foreach ($configs as &$node) {
+            $node['Children']  = array();
+            $tree[$node['ID']] = &$node;
+
+        }
+        foreach ($configs as &$node) {
+            $tree[$node['Parent']]['Children'][] = &$node;
+        }
+
+        $instruments = Utility::getAllInstruments();
+        $instruments = array_merge(array('' => ''), $instruments);
+
+        $this->tpl_data['parentMenuItems'] = $parentMenuItems;
+        $this->tpl_data['config']          = $configs;
+        $this->tpl_data['instruments']     = $instruments;
+        $this->tpl_data['sandbox']         = $config->getSetting("sandbox");
+
     }
 
     /**
-     * process the form
+     * Loads the subproject management submodule
      *
-     * @param Array $values the array of values from the form
-     * 
-     * @return NULL
+     * @return none
      */
-
-    function _process($values)
+    function subproject()
     {
-        foreach ($values as $key => $value) {
-            if (is_numeric($key)) { //update
-                $this->DB->update(
-                    'Config', 
-                    array('Value' => $value), 
-                    array('ID' => $key)
-                );
-            } else { //add new or remove
-                $id = split("-", $key);
-                if ($id[0] === "add") {
-                    $this->DB->insert(
-                        'Config', 
-                        array('ConfigID' => $id[1], 'Value' => $value)
-                    );
-                } elseif ($id[0] === "remove") {
-                    $this->DB->delete('Config', array('ID' => $id[1]));
-                }
-            } 
-        } 
-        
-        $this->configuration();
+        $factory = NDB_Factory::singleton();
+        $config  = $factory->config();
+
+        $subprojectList = Utility::getSubprojectList();
+        $subprojects    = array();
+        foreach ($subprojectList as $subprojectID => $title) {
+            $subprojects[$subprojectID]
+                = $config->getSubprojectSettings($subprojectID);
+        }
+        $this->tpl_data['subprojects'] = $subprojects;
+
+        $this->tpl_data['useEDCOptions']
+            = array(
+               '1' => 'Yes',
+               '0' => 'No',
+              );
+
+        $this->tpl_data['WindowDifferenceOptions']
+            = array(
+               'battery' => 'Closest Test Battery',
+               'optimal' => 'Optimal Visit Window for Visit Label',
+              );
     }
 }
 

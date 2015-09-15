@@ -34,10 +34,18 @@ class Database extends PEAR
     /**
      * The database handle, created by the connect() method
      *
+     * @var    PDO
      * @access private
      */
     var $_PDO = null;
-    //var $_databaseHandle = null;
+
+    /**
+     * The database handle for storing history information.
+     * If missing, will be the same as $_PDO
+     *
+     * @access private
+     */
+    var $_HistoryPDO = null;
 
     /**
      * Integer number of rows affected by the last replace/update/delete/insert
@@ -72,7 +80,8 @@ class Database extends PEAR
      * @param boolean $trackChanges boolean determining if changes should be
      *                              logged to the history table
      *
-     * @return object
+     * @return Database
+     * @throws DatabaseException
      * @access public
      */
     static function &singleton(
@@ -95,7 +104,7 @@ class Database extends PEAR
                 $connection = current($connections);
                 return $connection;
             } else {
-                return PEAR::raiseError('No database connection exists');
+                throw new DatabaseException("No database connection exists");
             }
         } else {
             // name the connection
@@ -113,7 +122,7 @@ class Database extends PEAR
                 );
                 if ($connections[$connection]->isError($ok)) {
                     unset($connections[$connection]);
-                    return PEAR::raiseError(
+                    throw new DatabaseException(
                         'Could not connect to database: '.$ok->getMessage()
                     );
                 }
@@ -147,9 +156,22 @@ class Database extends PEAR
         $this->_trackChanges = $trackChanges;
         $this->_databaseName = $database;
 
+        $historydb    = null;
+        $historytable = "history";
+
         if (class_exists('NDB_Config')) {
             $config =& NDB_Config::singleton();
             $this->_showQueries = $config->getSetting('showDatabaseQueries');
+
+            // get history database from config
+            $dbsettings = $config->getSetting("database");
+            if (isset($dbsettings['historydb'])) {
+                $historydb = $dbsettings['historydb'];
+            }
+            if (isset($dbsettings['historytable'])) {
+                $historytable = $dbsettings['historytable'];
+            }
+
         }
 
         $this->_PDO = new PDO(
@@ -163,6 +185,33 @@ class Database extends PEAR
             ." VALUES"
             ." (:histtable, :histcolumn, :newval, :oldval,"
             ." :primaryKeys, :primaryVals, :userID, :type)"
+        );
+
+        if (is_null($this->_HistoryPDO)) {
+            if (is_null($historydb)) {
+                $this->_HistoryPDO =& $this->_PDO;
+            } else {
+                $this->_HistoryPDO = new PDO(
+                    "mysql:host=$host;dbname=$historydb",
+                    $username,
+                    $password
+                );
+            }
+        }
+
+        $this->_preparedStoreHistory = $this->_HistoryPDO->prepare(
+            "INSERT INTO $historytable
+            (tbl, col, new, old, primaryCols, primaryVals, userID, type)
+            VALUES
+            ( :histtable,
+              :histcolumn,
+              :newval,
+              :oldval,
+              :primaryKeys,
+              :primaryVals,
+              :userID,
+              :type
+            )"
         );
     }
 
@@ -217,8 +266,11 @@ class Database extends PEAR
         $prep   = $this->_PDO->prepare($prepQ);
         $result = $prep->execute($exec_params);
         if ($result === false) {
-            return $this->raiseError(
-                "Insert statement did not execute successfully."
+            throw new DatabaseException(
+                "Insert statement did not execute successfully: "
+                . print_r($prep->errorInfo(), true),
+                $prepQ,
+                $exec_params
             );
         }
 
@@ -231,6 +283,17 @@ class Database extends PEAR
             return $err;
         }
         return true;
+    }
+
+    /**
+     * Get last insert ID.
+     * Will return a valid insert ID only if called after Database::insert() method.
+     *
+     * @return string ID of the last inserted row
+     */
+    public function getLastInsertId()
+    {
+        return $this->lastInsertID;
     }
 
     /**
@@ -300,8 +363,9 @@ class Database extends PEAR
         }
 
         if (preg_match("/=NULL/", $where)) {
-            return $this->raiseError(
-                "NULL values not allowed in a WHERE structure."
+            throw new DatabaseException(
+                "NULL values not allowed in a WHERE structure.",
+                $prepQ
             );
         }
 
@@ -314,8 +378,10 @@ class Database extends PEAR
         $prep   = $this->_PDO->prepare($prepQ);
         $result = $prep->execute($exec_params);
         if ($result === false) {
-            return $this->raiseError(
-                "Update statement did not execute successfully."
+            throw new DatabaseException(
+                "Update statement did not execute successfully.",
+                $prepQ,
+                $exec_params
             );
         }
         $this->affected = $prep->rowCount();
@@ -345,8 +411,9 @@ class Database extends PEAR
         }
 
         if (preg_match("/=NULL/", $query)) {
-            return $this->raiseError(
-                "NULL values not allowed in a WHERE structure."
+            throw new DatabaseException(
+                "NULL values not allowed in a WHERE structure.",
+                $query
             );
         }
 
@@ -354,11 +421,24 @@ class Database extends PEAR
         // one.
         $err = $this->_trackChanges($table, array(), $where, 'D');
         if ($this->isError($err)) {
-            return $err;
+            throw new DatabaseException(
+                "Unable to track changes for delete statement.",
+                $query,
+                $where
+            );
         }
 
         $this->_printQuery($query);
         $this->affected = $this->_PDO->exec($query);
+        if ($this->affected === false) {
+            throw new DatabaseException(
+                "Database DELETE did not execute successfully."
+                . print_r($this->_PDO->errorInfo(), true),
+                $query,
+                $where
+            );
+
+        }
     }
 
     /**
@@ -385,11 +465,10 @@ class Database extends PEAR
             && strpos(strtoupper($query), 'SHOW') !== 0
             && strpos(strtoupper($query), 'DESCRIBE') !== 0
         ) {
-            $result = $this->raiseError(
-                "Only SELECT statements can be run with Database::select()."
-                . "  Query was '$query'"
+            throw new DatabaseException(
+                "Only SELECT statements can be run with Database::select().",
+                $query
             );
-            return;
         }
 
         try {
@@ -403,8 +482,7 @@ class Database extends PEAR
             }
             return $result;
         } catch(Exception $e) {
-            $result = $this->raiseError("Invalid SELECT statement, $query");
-            return $result;
+            throw new DatabaseException("Invalid SELECT statement", $query);
         }
     }
 
@@ -470,7 +548,14 @@ class Database extends PEAR
     function run($query)
     {
         $this->_printQuery($query);
-        $this->affected     = $this->_PDO->exec($query);
+        $this->affected = $this->_PDO->exec($query);
+
+        if ($this->affected === false) {
+            throw new DatabaseException(
+                "Could not run query $query"
+                . print_r($this->_PDO->errorInfo(), true)
+            );
+        }
         $this->lastInsertID = $this->_PDO->lastInsertId();
     }
 
@@ -503,7 +588,12 @@ class Database extends PEAR
     function execute($prepared, $params)
     {
         $execRun = $prepared->execute($params);
-        $rows    = $prepared->fetchAll(PDO::FETCH_ASSOC);
+        if ($execRun === false) {
+            $err = $prepared->errorInfo();
+            throw new DatabaseException($err[2], $prepared->queryString, $params);
+        }
+
+        $rows = $prepared->fetchAll(PDO::FETCH_ASSOC);
         return $rows;
     }
     /**
@@ -520,8 +610,9 @@ class Database extends PEAR
     function pselect($query, $params)
     {
         $this->_printQuery($query, $params);
-        $stmt = $this->prepare($query);
-        return $this->execute($stmt, $params);
+        $stmt   = $this->prepare($query);
+        $result = $this->execute($stmt, $params);
+        return $result;
     }
 
     /**
@@ -784,7 +875,9 @@ class Database extends PEAR
         if ($params) {
             $query = str_replace(array_keys($params), array_values($params), $query);
         }
-        print "$this->_databaseName: $query<br>\n";
+        print "$this->_databaseName:"
+            . date("j-M-Y G:i:s", time())
+            .": $query<br>\n";
     }
 
     /**
@@ -795,6 +888,57 @@ class Database extends PEAR
     function getAffected()
     {
         return $this->affected;
+    }
+
+    /**
+     * This function fakes the data in a table for testing purposes.
+     * It replaces the existing table with a temporary table for the
+     * session, and then inserts the data passed into the temporary
+     * table. This should allow people to write more robust data
+     * dependant unit tests that depend on the data in the database
+     * without mocking every single query that needs to be used in
+     * that test.
+     *
+     * @param string $tableName The table name to fake
+     * @param array  $rowData   An array of data to be inserted into
+     *                          the fake table.
+     *
+     * @return none
+     */
+    function setFakeTableData($tableName, $rowData)
+    {
+        $originalTableQuery = $this->_PDO->query("SHOW CREATE TABLE $tableName");
+
+        if ($originalTableQuery->execute()) {
+            $createRslt = $originalTableQuery->fetchAll();
+            $createStmt = $createRslt[0]['Create Table'];
+
+            $createStmt = preg_replace(
+                "/CREATE TABLE/",
+                "CREATE TEMPORARY TABLE",
+                $createStmt
+            );
+            $createStmt = preg_replace(
+                "/(\s*)(CONSTRAINT)(.*)(,*)(\s*)/",
+                "$4",
+                $createStmt
+            );
+            $createStmt = preg_replace(
+                "/,(\s*)(\))/",
+                ")",
+                $createStmt
+            );
+
+            $this->run($createStmt);
+
+            foreach ($rowData as $row) {
+                $this->insert($tableName, $row);
+            }
+        } else {
+            throw new DatabaseException(
+                "Could not retrieve schema of table $tableName"
+            );
+        };
     }
 }
 ?>

@@ -1,19 +1,27 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" style="height:100%; background:transparent">
+<!DOCTYPE html>
+<html style="height:100%; background:transparent">
     {if $dynamictabs neq "dynamictabs"}
     <head>
-        <link rel="stylesheet" href="{$css}" type="text/css" />
+        <link rel="stylesheet" href="{$baseurl}/{$css}" type="text/css" />
         <link rel="shortcut icon" href="images/mni_icon.ico" type="image/ico" />
-        <script src="js/jquery/jquery-1.11.0.min.js" type="text/javascript"></script>
-        <script type="text/javascript" src="js/jquery/jquery-ui-1.10.4.custom.min.js"></script>
-        <script type="text/javascript" src="js/jquery.dynamictable.js"></script>
+        <script src="{$baseurl}/js/jquery/jquery-1.11.0.min.js" type="text/javascript"></script>
+        <script src="{$baseurl}/js/modernizr.min.js" type="text/javascript"></script>
+        <script src="{$baseurl}/js/react-with-addons-0.13.3.min.js" type="text/javascript"></script>
+        <script src="{$baseurl}/js/components/PaginationLinks.js" type="text/javascript"></script>
+        <script type="text/javascript" src="{$baseurl}/js/jquery/jquery-ui-1.10.4.custom.min.js"></script>
+        <script type="text/javascript" src="{$baseurl}/js/jquery.dynamictable.js"></script>
+        <script type="text/javascript" src="{$baseurl}/js/jquery.fileupload.js"></script>
+        <script type="text/javascript" src="{$baseurl}/js/polyfiller.js"></script>
+        <script>
+            $.webshims.polyfill();
+        </script>
         <!-- Custom JavaScript for the Menu Toggle -->
    
-        <link type="text/css" href="css/loris-jquery/jquery-ui-1.10.4.custom.min.css" rel="Stylesheet" />
+        <link type="text/css" href="{$baseurl}/css/loris-jquery/jquery-ui-1.10.4.custom.min.css" rel="Stylesheet" />
 
         <!-- Latest compiled and minified CSS -->
-        <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
-        <link rel="stylesheet" href="bootstrap/css/custom-css.css">
+        <link rel="stylesheet" href="{$baseurl}/bootstrap/css/bootstrap.min.css">
+        <link rel="stylesheet" href="{$baseurl}/bootstrap/css/custom-css.css">
         <!-- <link rel="stylesheet" href="bootstrap-3.1.1/css/magic-bootstrap.css"> -->
 
         <!-- Module-specific CSS -->
@@ -22,7 +30,7 @@
         {/if}
 
         <!-- Latest compiled and minified JavaScript -->
-        <script src="bootstrap/js/bootstrap.min.js"></script>
+        <script src="{$baseurl}/bootstrap/js/bootstrap.min.js"></script>
         <title>
             {$study_title}
         </title>
@@ -32,8 +40,8 @@
         {/if}
 
         {literal}
-            <script language="javascript" type="text/javascript"> 
-                
+            <script language="javascript" type="text/javascript">
+
                 var FeedbackButtonBoolean;
 
                 function FeedbackButtonClicked() {
@@ -45,7 +53,7 @@
                     w.focus();
                 }
 
-                function feedback_bvl_popup(features) { 
+                function feedback_bvl_popup(features) {
                     if (getCookie('FeedbackButtonBoolean')) {
                     {/literal}
                     var myUrl = "feedback_bvl_popup.php?test_name={$test_name}&candID={$candID}&sessionID={$sessionID}&commentID={$commentID}";
@@ -77,6 +85,12 @@
                         $(this).toggleClass('open');
                     });
                     $(".help-button").click(function(e) {
+                        var helpContent = $('div.help-content');
+                        if(helpContent.length) {
+                           helpContent.toggle();
+                           e.preventDefault();
+                           return;
+                        }
                         var getParams = {};
                         {/literal}
                         {if $test_name}
@@ -113,51 +127,46 @@
                                 {literal}
                                 document.getElementById('page').appendChild(div);
                                 div.setAttribute("class", "help-content");
+                                $(div).addClass('visible');
                                 btn.addEventListener("click", function(e) {
-                                    $(div).hide();      
-                                    e.preventDefault(); 
+                                    $(div).hide();
+                                    e.preventDefault();
                                 }) ;
                                 edit.addEventListener("click", function(e) {
                                     document.cookie = "LastUrl = " + document.location.toString();
                                     window.open("main.php?test_name=help_editor&subtest=edit_help_content&section="
-                                    +getParams.test_name+"&subsection="+getParams.subtest, "_self");      
-                                    e.preventDefault(); 
+                                    +getParams.test_name+"&subsection="+getParams.subtest, "_self");
+                                    e.preventDefault();
                                 }) ;
                         }, "json");
                         e.preventDefault();
                     });
 
                     $(".dynamictable").DynamicTable();
+                    $(".fileUpload").FileUpload();
                 });
-
-                
             </script>
         {/literal}
-        <link type="text/css" href="css/jqueryslidemenu.css" rel="Stylesheet" />
-        <script type="text/javascript" src="js/jquery/jqueryslidemenu.js"></script>
-        <link href="css/simple-sidebar.css" rel="stylesheet">
+        <link type="text/css" href="{$baseurl}/css/jqueryslidemenu.css" rel="Stylesheet" />
+        <script type="text/javascript" src="{$baseurl}/js/jquery/jqueryslidemenu.js"></script>
+        <link href="{$baseurl}/css/simple-sidebar.css" rel="stylesheet">
 
          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
     </head>
     {/if}
-    <body {if $PopUpFeedbackBVL && ($user.permissions.superuser==true 
-              || $user.permissions.access_all_profiles==true 
-              || $user.user_from_study_site==true)}
-                    onload="feedback_bvl_popup();" 
-            {/if}
-    >
+    <body>
     <div id="wrap">
         {if $dynamictabs neq "dynamictabs"}
             <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" 
+                    <button type="button" class="navbar-toggle" data-toggle="collapse"
                         data-target="#example-navbar-collapse">
                         <span class="sr-only">Toggle navigation</span>
                         <span class="glyphicon glyphicon-chevron-down" style="color:white"></span>
                     </button>
                     <button type="button" class="navbar-toggle help-button">
                         <span class="sr-only">Toggle navigation</span>
-                        <img width=17 src=images/help.gif>
+                        <img width=17 src="{$baseurl}/images/help.gif">
                     </button>
                     <button type="button" class="navbar-toggle" onclick="FeedbackButtonClicked()">
                         <span class="sr-only">Toggle navigation</span>
@@ -171,7 +180,7 @@
                         </a>
                     {/if}
 
-                    <a class="navbar-brand" href="main.php">LORIS{if $sandbox}: DEV{/if}</a>
+                    <a class="navbar-brand" href="{$baseurl}/">LORIS{if $sandbox}: DEV{/if}</a>
                </div>
                <div class="collapse navbar-collapse" id="example-navbar-collapse">
                     <ul class="nav navbar-nav">
@@ -184,11 +193,19 @@
                                     <ul class="dropdown-menu">
                                         {foreach from=$tab.subtabs item=mySubtab}
                                             {if $mySubtab.Visible == 1}
-                                            <li>
+                                                {if substr($mySubtab.Link,0,4) eq 'http'}
+                                                    <li>
                                                         <a href="{$mySubtab.Link}">
                                                             {$mySubtab.Label}
                                                         </a>
-                                            </li>
+                                                    </li>
+                                                {else}
+                                                    <li>
+                                                        <a href="{$baseurl}/{$mySubtab.Link}">
+                                                            {$mySubtab.Label}
+                                                        </a>
+                                                    </li>
+                                                {/if}
                                             {/if}
                                         {/foreach}
                                     </ul>
@@ -204,7 +221,7 @@
                         </li>
                         <li class="hidden-xs hidden-sm">
                             <a href="#" class="navbar-brand pull-right help-button">
-                                <img width=17 src=images/help.gif>
+                                <img width=17 src="{$baseurl}/images/help.gif">
                             </a>
                         </li>
                         <li>
@@ -336,8 +353,7 @@
                             {else}
                                 {if $candID != ""}
                                     <!-- table with candidate profile info -->
-                                    <div class="table-responsive">
-                                        <table cellpadding="2" class="table table-info table-bordered" style="max-width:auto">
+                                        <table cellpadding="2" class="table table-info table-bordered dynamictable" style="max-width:auto">
                                             <!-- column headings -->
                                             <thead>
                                                 <tr class="info">
@@ -465,7 +481,6 @@
                                                     </tr>
                                             </tbody>  
                                         </table>
-                                    </div>
 
                                     {if $sessionID != ""}
                                         <div class="table-responsive">
@@ -523,7 +538,7 @@
                                         </div>
                                     {/if}
                                 {/if}
-                                <div id="kgkjgkjg">
+                                <div id="lorisworkspace">
                                     {$workspace}
                                 </div>  
                             {/if}
@@ -541,8 +556,11 @@
                 {$workspace}
             {/if}
         </div>
-        </div>
-        </div>
+
+        {if $control_panel}
+        </div></div>
+        {/if}
+
         {if $dynamictabs neq "dynamictabs"}
             {if $control_panel}
             <div id="footer" class="footer navbar-bottom wrapper">

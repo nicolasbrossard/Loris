@@ -45,8 +45,8 @@
                         <div class="col-sm-12 col-md-4">{$form.Review_done.html}</div>
                     </div>
                     <div class="form-group col-sm-4">
-                        <label class="col-sm-12 col-md-8">{$form.Project.label}</label>
-                        <div class="col-sm-12 col-md-4">{$form.Project.html}</div>
+                        <label class="col-sm-12 col-md-8">{$form.Exclusionary_Status.label}</label>
+                        <div class="col-sm-12 col-md-4">{$form.Exclusionary_Status.html}</div>
                     </div>
                     <div class="form-group col-sm-4">
                         <label class="col-sm-12 col-md-6">{$form.dccid.label}</label>
@@ -68,16 +68,19 @@
                         <label class="col-sm-12 col-md-8">{$form.Final_Review_Results.label}</label>
                         <div class="col-sm-12 col-md-4">{$form.Final_Review_Results.html}</div>
                     </div>
+                    {if $form.Project}
                     <div class="form-group col-sm-4">
-                        <label class="col-sm-12 col-md-8">{$form.Exclusionary_Status.label}</label>
-                        <div class="col-sm-12 col-md-4">{$form.Exclusionary_Status.html}</div>
+                        <label class="col-sm-12 col-md-8">{$form.Project.label}</label>
+                        <div class="col-sm-12 col-md-4">{$form.Project.html}</div>
                     </div>
+                    {/if}
                 </div>
                 <div class="row">
                     <div class="form-group col-sm-4">
                         <label class="col-sm-12 col-md-8">{$form.Finalized.label}</label>
                         <div class="col-sm-12 col-md-4">{$form.Finalized.html}</div>
                     </div>
+                    <div class="form-group col-sm-4"></div>
                     <div class="form-group col-md-4 col-sm-6">
                         <div class="col-sm-6 col-xs-12">
                             <input type="submit" name="filter" value="Show Data" class="btn btn-sm btn-primary col-xs-12" />
@@ -114,8 +117,8 @@
 
 
 <!-- start data table -->
-<div id="datatable" class="table-responsive">
-    <table border="0" class="table table-hover table-primary table-bordered">
+<div id="datatable">
+    <table border="0" class="table table-hover table-primary table-bordered dynamictable">
         <thead>
             <tr class="info">
                 <th>No.</th>
@@ -140,7 +143,7 @@
                 {/section}
                 </tr>           
             {sectionelse}
-                <tr><td colspan="8">Nothing found</td></tr>
+                <tr><td colspan="14">Nothing found</td></tr>
             {/section}
         </tbody>        
     <!-- end data table -->

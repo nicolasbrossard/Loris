@@ -39,7 +39,14 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
         if (Utility::isErrorX($user)) {
             return PEAR::raiseError("User Error: " .$user->getMessage());
         }
-        return $user->hasPermission('view_final_radiological_review');
+
+        // allow only to view own site data
+        $site =& Site::singleton($user->getData('CenterID'));
+        if (Utility::isErrorX($site)) {
+            return PEAR::raiseError("DB Error: ".$site->getMessage());
+        }
+
+        return ($user->hasPermission('imaging_browser_view_allsites') || ($site->isStudySite() && $user->hasPermission('imaging_browser_view_site')));
     }
 
     /**
@@ -93,7 +100,7 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
         $PendingFailSubquery = "
             CASE s.MRIQCStatus
                 WHEN 'Fail' THEN
-                    IF(s.MRIQCPending, 'Pending Fail', 'Fail')
+                    IF(s.MRIQCPending='Y', 'Pending Fail', 'Fail')
                 WHEN 'Pass' THEN
                     IF(s.MRIQCPending='Y', 'Pending Pass', 'Pass')
                 ELSE s.MRIQCStatus
@@ -105,12 +112,18 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
             JOIN candidate c ON (c.CandID=s.CandID) 
             JOIN files f ON (f.SessionID=s.ID) 
             LEFT JOIN files_qcstatus fqc ON (fqc.FileID=f.FileID) 
-            JOIN mri_acquisition_dates md ON (md.SessionID=s.ID) 
+            JOIN mri_acquisition_dates md ON (md.SessionID=s.ID)
             WHERE 
             f.PendingStaging=0 AND 
             f.FileType='mnc' AND 
             f.OutputType='native' AND 
             f.AcquisitionProtocolID not in (1, 2, 3, 52)";
+
+        $user =& User::singleton();
+        $DB = Database::singleton();
+        if (!$user->hasPermission('imaging_browser_view_allsites')) {
+            $this->query .= " AND c.CenterID=" . $DB->quote($user->getCenterID());
+        }
 
         $this->columns = array(
             'p.MRI_alias as Site',
@@ -149,7 +162,8 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
             'c.ProjectID',
             'c.CenterID',
             's.MRIQCStatus',
-            'pending'
+            'pending',
+            'f.AcquisitionProtocolID'
         );
 
         $this->formToFilter = array(
@@ -159,9 +173,10 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
             'ProjectID' => 'c.ProjectID',
             'SiteID' => 'c.CenterID',
             'VisitQCStatus' => 's.MRIQCStatus',
-            'Pending' => 'pending'
+            'Pending' => 'pending',
+            'Scan_type'=>'f.AcquisitionProtocolID'
         );
-        $this->EqualityFilters = array();
+        $this->EqualityFilters = array('f.AcquisitionProtocolID');
         $this->searchKeyword    = array();
     }
 
@@ -172,6 +187,32 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
      */
     function _setFilterForm()
     {
+        // create user object
+        $user =& User::singleton();
+        if(Utility::isErrorX($user)) {
+            return PEAR::raiseError("User Error: ".$user->getMessage());
+        }
+        
+        // PSC
+        if ($user->hasPermission('imaging_browser_view_allsites')) {
+            // get the list of study sites - to be replaced by the Site object
+            $list_of_sites = Utility::getSiteList();
+            if(Utility::isErrorX($list_of_sites)) {
+                return PEAR::raiseError("DB Error: ".$list_of_sites->getMessage());
+            }
+            if(is_array($list_of_sites)) $list_of_sites = array('' => 'All') + $list_of_sites;
+        }
+        else {
+            // allow only to view own site data
+            $site =& Site::singleton($user->getData('CenterID'));
+            if (Utility::isErrorX($site)) {
+                return PEAR::raiseError("DB Error: ".$site->getMessage());
+            }
+            if ($site->isStudySite()) {
+                $list_of_sites = array($user->getData('CenterID') => $user->getData('Site'));
+            }
+        }
+
         $DB = Database::singleton();
         $allAr = array('' => 'All');
         $this->addBasicText('pscid', 'PSCID', array("size"=>10,"maxlength"=>25));
@@ -181,8 +222,18 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
         $this->addBasicText(
             'DCCID', 'DCCID', array('size' => 10, "maxlength" => 25)
         );
-        $this->addSelect('ProjectID', 'Project', $allAr + Utility::getProjectList());
-        $this->addSelect('SiteID', 'Site', $allAr + Utility::getSiteList());
+
+        $config =& NDB_Config::singleton();
+        if ($config->getSetting('useProjects') === "true") {
+            $list_of_projects = $allAr;
+            $projectList = Utility::getProjectList();
+            foreach ($projectList as $key => $value) {
+                $list_of_projects[$key] =$value;
+            }
+            $this->addSelect('ProjectID', 'Project', $list_of_projects);  
+        }
+
+        $this->addSelect('SiteID', 'Site', $list_of_sites);
         $this->addSelect(
             'VisitQCStatus',
             'QC Status',
@@ -193,7 +244,21 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
             'Pending',
             'Pending and New',
             array(''=>'All', 'P'=>'Pending', 'N'=>'New', 'PN'=>'Pending or New')
-        ); 
+        );
+
+        //query to get scan types that exist for the project
+        $types_q = $DB->pselect(
+                "SELECT ID, Scan_type FROM mri_scan_type mri
+                 JOIN files f ON (f.AcquisitionProtocolID=mri.ID)",
+                 array()
+        );
+        $scan_types[''] = '';
+        foreach ($types_q as $row) {
+            $type                   = $row['Scan_type'];
+            $scan_types[$row['ID']] = $type;
+        }
+        $this->addSelect('Scan_type', 'Sequence Type', $scan_types);
+
         $outputTypes = $DB->pselect(
             "SELECT DISTINCT OutputType AS outputType 
             FROM files WHERE FileType='mnc' AND OutputType!='native'", array()
@@ -237,7 +302,7 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
             foreach ($item as $key => $val) {
                 if ($key == 'sessionID') {
                     $this->tpl_data['items'][$x]['sessionID'] = $val;
-		    $filtered_sessionIDs[] = $val;
+                    $filtered_sessionIDs[] = $val;
                     continue;
                 }
                 $this->tpl_data['items'][$x][$i]['name'] = $key;
@@ -247,7 +312,7 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
             $x++;
         }
         $this->tpl_data['numTimepoints'] = $this->TotalItems; //$x;
-	$_SESSION['State']->setProperty(
+        $_SESSION['State']->setProperty(
 	    'mriSessionsListed', $filtered_sessionIDs
         );
         return true;
@@ -266,7 +331,7 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
     {
         $query = '';
         if ((!empty($val) || $val === '0') && $field != 'order') {
-            if ($field != 'pending') {
+            if ($field != 'pending' && $field !='AcquisitionProtocolID') {
                 if (in_array($field, $this->CheckboxFilters) && $val) {
                     $query .= " AND $field";
                 } elseif (strtolower(substr($field, -8)) == 'centerid'
@@ -280,7 +345,7 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
                 } else {
                     $query .= " AND $field LIKE CONCAT('%', :v_$prepared_key, '%') ";
                 }
-            } else {
+            } else if ($field == 'pending') {
                 switch ($val) {
                 case "P":
                     $query .= " AND s.MRIQCPending='Y'"; 
@@ -294,6 +359,8 @@ class NDB_Menu_Filter_Imaging_Browser extends NDB_Menu_Filter
                         OR s.MRIQCStatus='' OR fqc.QCFirstChangeTime IS NULL)"; 
                     break;
                 }
+            } else if ($field == 'AcquisitionProtocolID') {
+                  $query .= " AND $field = :v_$prepared_key";
             }
         }
         return $query;

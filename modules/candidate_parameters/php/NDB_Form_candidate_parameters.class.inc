@@ -59,9 +59,8 @@ class NDB_Form_candidate_parameters extends NDB_Form
         }
 
         // check user permissions
-        return ($user->hasPermission('data_entry') 
-                && $user->getData('CenterID') == $candidate->getData('CenterID') 
-                && $user->hasPermission('unsend_to_dcc'));
+	return ($user->hasPermission('candidate_parameter_edit')  
+                && $user->getData('CenterID') == $candidate->getData('CenterID'));  
     }
      /**
       * Returns default values for all candidate parameters
@@ -70,38 +69,37 @@ class NDB_Form_candidate_parameters extends NDB_Form
       */
     function _getDefaults()
     {
-        $DB =& Database::singleton();
+        $DB     =& Database::singleton();
+        $config =& NDB_Config::singleton();
         //Get the default values
         $value_results = $DB->pselect("SELECT ParameterTypeID, Value FROM 
                          parameter_candidate WHERE CandID=:CaID", 
                          array('CaID' => $this->identifier));
-
-        $proband_info['ProbandDoB'] = $DB->pselectOne("SELECT ProbandDoB FROM 
-                                       candidate WHERE CandID=:CandidateID", 
-                                       array('CandidateID' => $this->identifier));
-        if ($proband_info['ProbandDoB']=== '0000-00-00') {
-            $proband_info['ProbandDoB'] = '';
-        }
-        $proband_info['ProbandGender'] = $DB->pselectOne("SELECT ProbandGender FROM 
-                                         candidate WHERE CandID=:CandidateID", 
-                                         array('CandidateID' => $this->identifier));
-        $candidate_dob                 = $DB->pselectOne("SELECT DoB FROM candidate 
+        $candidate_dob = $DB->pselectOne("SELECT DoB FROM candidate 
                                          WHERE CandID=:CandidateID", 
                                          array('CandidateID' => $this->identifier));
 
-        $age                           = Utility::calculateAge(
-                                       $proband_info['ProbandDoB'], $candidate_dob); 
-        if (Utility::isErrorX($age)) {
-            $defaults['Age_Difference'] = 'Could not calculate age';
-        } else {
-            $defaults['Age_Difference'] = $age['year']*12 + $age['mon'] + 
-                                          round($age['day']/30, 2);
-        }
-        $this->tpl_data['proband_info'] = $proband_info;
-        foreach ($proband_info as $key=>$val) {
-            $defaults[$key] = $val;
-            if ($key == 'ProbandDoB') {
-                $defaults[$key."2"] = $proband_info[$key];
+        if ($config->getSetting('useProband') === 'true') {
+            $proband_info = $DB->pselectRow("SELECT ProbandDoB,ProbandGender FROM
+                    candidate WHERE CandID=:CandidateID",
+                    array('CandidateID' => $this->identifier));
+            if ($proband_info['ProbandDoB']=== '0000-00-00') {
+                $proband_info['ProbandDoB'] = '';
+            }
+            if (!empty($proband_info['ProbandDoB']) & !empty($candidate_dob) ) {
+                $age = Utility::calculateAge($proband_info['ProbandDoB'],
+                                             $candidate_dob);
+                $defaults['Age_Difference'] = $age['year']*12 + $age['mon'] + 
+                        round($age['day']/30, 2);
+            } else {
+                $defaults['Age_Difference'] = 'Could not calculate age';
+            }
+            $this->tpl_data['proband_info'] = $proband_info;
+            foreach ($proband_info as $key=>$val) {
+                $defaults[$key] = $val;
+                if ($key == 'ProbandDoB') {
+                    $defaults[$key."2"] = $proband_info[$key];
+                }
             }
         }
 
@@ -109,10 +107,7 @@ class NDB_Form_candidate_parameters extends NDB_Form
                                     CandID=:CandidateID",
                                     array('CandidateID'=>$this->identifier));
         if (Utility::isErrorX($familyid)) {
-            $relations = $DB->pselect("SELECT Relation_CandID, Relation_code FROM 
-                         family WHERE CandID=:CandidateID", 
-                         array('CandidateID'=> $this->identifier));
-
+            return PEAR::raiseError("Error: ".$familyid->getMessage());
         } else {
             $this->tpl_data['familyID'] = $familyid;
             $relations                  = $DB->pselect("SELECT CandID, Relationship_type 
@@ -163,8 +158,8 @@ class NDB_Form_candidate_parameters extends NDB_Form
  
        // Getting participant status default values
         $ps_info = $DB->pselectRow("SELECT study_consent,study_consent_date,study_consent_withdrawal,
-                                    ndar_consent,ndar_consent_date,ndar_consent_withdrawal,reason_specify,
-                                    participant_status,participant_suboptions FROM participant_status 
+                                    reason_specify,participant_status,participant_suboptions
+                                    FROM participant_status
                                     WHERE CandID = :cid", array('cid'=>$this->identifier));
         if (empty ($ps_info['participant_status'])) {
             //set candidate to active by default
@@ -192,7 +187,6 @@ class NDB_Form_candidate_parameters extends NDB_Form
 		}
 	}
 
-        $config                            =& NDB_Config::singleton();
         $consent                           = $config->getSetting('ConsentModule');
         $this->tpl_data['display_consent'] = false;
         if ($consent['useConsent'] === 'true') {
@@ -402,6 +396,11 @@ class NDB_Form_candidate_parameters extends NDB_Form
                    "SELECT COUNT(*) FROM participant_status WHERE CandID = :cid", 
                    array("cid"=>$values['CandID'])
                    );
+
+           // Insert to consent_info_history table first, before participant_status
+           // because else{} below adds a column specific to participant_status table
+           $success = $DB->insert("consent_info_history", $participant_vals); 
+
            if ($ParticipantCount > 0) {
                $success = $DB->update(
                        "participant_status", 
@@ -414,18 +413,6 @@ class NDB_Form_candidate_parameters extends NDB_Form
                $success = $DB->insert("participant_status",$participant_vals);
            }
 
-           if (Utility::isErrorX($success)) {
-               return PEAR::raiseError(
-                       "NDB_Form_candidate_parameters::_process: ".$success->getMessage()
-                       );
-           }
-
-           $success = $DB->insert("consent_info_history", $participant_vals); 
-           if (Utility::isErrorX($success)) {
-               return PEAR::raiseError(
-                       "NDB_Form_candidate_parameters::_process: ".$success->getMessage()
-                       );
-           }
        }
        $this->tpl_data['success'] = true;
 
@@ -448,18 +435,13 @@ class NDB_Form_candidate_parameters extends NDB_Form
         return $ret;
     }
 
+    /**
+     * @throws DatabaseException
+     */
     function candidate_parameters()
     {
         $DB =& Database::singleton();
         $config =& NDB_Config::singleton();
-
-        $ethnicityList = array(null=>'');
-        $success = Utility::getEthnicityList();
-        if (Utility::isErrorX($success)) {
-        	return PEAR::raiseError("Utility::getEthnicityList error: ".$success->getMessage());
-        }
-        $ethnicityList = array_merge($ethnicityList,$success);
-        unset($success);
         
         $candidate =& Candidate::singleton($this->identifier);
         if (Utility::isErrorX($candidate)) {
@@ -509,7 +491,7 @@ class NDB_Form_candidate_parameters extends NDB_Form
         $this->addScoreColumn('pscid', 'PSCID');
         $this->tpl_data['pscid'] = $pscid;
 
-        $options = $this->getParticipantStatusOptions();
+        $options = self::getParticipantStatusOptions();
         $options = array('') + $options;
         $this->tpl_data['pstatus_options'] = $options;
         $this->tpl_data['pstat'] = $_REQUEST['participant_status'];
@@ -535,24 +517,27 @@ class NDB_Form_candidate_parameters extends NDB_Form
                 $consentQuestion = array($question['name']=> $question['label'],
                                          $question['name'] . '_date' => "Date of <BR> $question[label]",
                                          $question['name'] . '_withdrawal' => "Date of withdrawal <BR> of $question[label]",
+                                         'entry_staff'=>'Data Entry Staff',
                                          'data_entry_date' =>'Date Updated',
-                                         'entry_staff'=>'Data Entry Staff');
+                                        );
                 $fields = $question['name'].', '.$question['name'] . '_date, '.$question['name'] . '_withdrawal, ';
-                $study_consent = $DB->pselect("SELECT $fields entry_staff,data_entry_date 
+                $study_consent = $DB->pselect("SELECT $fields entry_staff,data_entry_date
                                                FROM consent_info_history WHERE CandID=:cid", 
                                                array('cid'=>$this->identifier));
                $study_consent_hist = array();
                 for ($i=0; $i<sizeof($study_consent); $i++ ) {
-                    foreach ($study_consent[$i] as $key=>$value) {
-                        if ($key == $question['name'] && empty($study_consent[$i][$question['name']])) {
-                            break;
-                        }
-                        if (!empty($study_consent[$i][$question['name']])) {
-                           $study_consent_hist[$i][$key] = $value;
-                        }
+                    foreach($consentQuestion as $key => $column_title) {
+                          if ($key == $question['name'] && empty($study_consent[$i][$question['name']])) {
+                              break;
+                          }
+
+                         if (!empty($study_consent[$i][$question['name']])) {
+                             $study_consent_hist[$i][$key] = $study_consent[$i][$key];
+                         }
                     }
                 }
-            $this->tpl_data['consent_list'][$question['name']] = array('label'=>$consentQuestion, 
+
+            $this->tpl_data['consent_list'][$question['name']] = array('label'=>$consentQuestion,
                                                                        'history'=>$study_consent_hist);
             }
         }
@@ -608,9 +593,9 @@ class NDB_Form_candidate_parameters extends NDB_Form
         $this->tpl_data['pscid'] = $pscid;
         $parentID = $DB->pselectOne('SELECT participant_status FROM participant_status Where CandID = :candid',
                                      array('candid'=>$this->identifier));
-        $sub_options = $this->getParticipantStatusSubOptions($parentID);
+        $sub_options = self::getParticipantStatusSubOptions($parentID);
         $sub_options = array('') + $sub_options;
-        $options = $this->getParticipantStatusOptions();
+        $options = self::getParticipantStatusOptions();
       //  $options = array('') + $options;
         $this->tpl_data['pstatus_options'] = $options;
         $this->tpl_data['pstatus_suboptions'] = $sub_options;
@@ -819,7 +804,7 @@ class NDB_Form_candidate_parameters extends NDB_Form
     { 
         $config =& NDB_Config::singleton();
         $errors=array();
-        $options = $this->getParticipantStatusOptionsVerbose();
+        $options = self::getParticipantStatusOptionsVerbose();
 
         $DB =& Database::singleton();
         if($fields['ProbandDoB']['M'] != $fields['ProbandDoB2']['M'] ||
@@ -914,7 +899,7 @@ class NDB_Form_candidate_parameters extends NDB_Form
      * @return array Options array suitable for use in QuickForm select
      *               element
      */
-    function getParticipantStatusOptions()
+    static function getParticipantStatusOptions()
     {
         $DB =& Database::singleton();
         $options = $DB->pselect(
@@ -936,7 +921,7 @@ class NDB_Form_candidate_parameters extends NDB_Form
      *               the entire row from participant_status_options instead of
      *               only the description
      */
-    function getParticipantStatusOptionsVerbose()
+    static function getParticipantStatusOptionsVerbose()
     {
         $DB =& Database::singleton();
         $options = $DB->pselect(
@@ -960,7 +945,7 @@ class NDB_Form_candidate_parameters extends NDB_Form
      * @return array Options array suitable for use in QuickForm select
      *               element
      */
-    function getParticipantStatusSubOptions($parentID)
+    static function getParticipantStatusSubOptions($parentID)
     {
         $DB =& Database::singleton();
         $options = $DB->pselect(

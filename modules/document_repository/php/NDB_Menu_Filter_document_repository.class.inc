@@ -40,7 +40,7 @@ class NDB_Menu_Filter_Document_Repository extends NDB_Menu_Filter
             return PEAR::raiseError("User error: " . $user->getMessage());
         }
 
-        return $user->hasPermission('file_upload');
+        return $user->hasPermission('document_repository_view') || $user->hasPermission('document_repository_delete');
     
     }
 
@@ -233,7 +233,6 @@ class NDB_Menu_Filter_Document_Repository extends NDB_Menu_Filter
      * Sets the template data for the list of candidates, users, etc.
      *
      * @return void
-     * @throws PEAR_Error
      * @access private
      */
     function _setDataTable()
@@ -251,7 +250,7 @@ class NDB_Menu_Filter_Document_Repository extends NDB_Menu_Filter
                     $refs->{$result['id']} =& $thisref;
                 }
                 foreach ($result as $k => $v) {
-                        $thisref->{$k} = $v;
+                        $thisref->{$k} = utf8_encode($v);
                 }
                 if ($result['parent_id'] == 0) {
                     $tree->{$result['id']} = &$thisref;
@@ -324,6 +323,7 @@ class NDB_Menu_Filter_Document_Repository extends NDB_Menu_Filter
         while ($item = $prepared->fetch(PDO::FETCH_ASSOC)) {
             $FileCategory =& $this->tpl_data['File_categories'][$item['File_category']];
             $DisplayItem = $item;
+            $DisplayItem['File_name'] = utf8_encode($item['File_name']);
             $DisplayItem['File_size'] = $this->format_size($item['File_size']);
             $DisplayItem['For_site']  = $site_names[$item['For_site']];
 

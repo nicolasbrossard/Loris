@@ -18,10 +18,11 @@ $(document).ready(function () {
             }
             console.log(FileIDs);
 
-            w = window.open("minc.html?minc_id=[" + FileIDs + "]" + extraparam);
+            w = window.open("main.php?test_name=brainbrowser&minc_id=[" + FileIDs + "]" + extraparam);
             w.focus();
         };
     };
     $("#bboverlay").click(callback("&overlay=true"));
     $("#bbonly").click(callback());
+
 });

@@ -1,62 +1,70 @@
-
-
-<form>
-<table border="0" valign="top" class="std">
-    <tr>
-        <th colspan="4">Selection Filter</th>
-    </tr>
-    
-    
-    <tr>    
-        <td>
-            Visit_labels
-        </td>
-        <td>
-	        <div>
-            <select name="visit_label" onchange="changefieldOptions()" id="visit_label">
-                {foreach from=$visitLabels item=name key=val}
-			 	   {if $name eq $visit_label}
-					   <option value="{$name}" selected="selected"> {$name}</option>
-				    {else}
-	       				<option value="{$name}"> {$name}</option>
-    				{/if}
-			    {/foreach}
-            </select>
-  	        </div>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            Instruments:
-        </td>
-        <td>
-            <div>
-                <select name="instrument" id="instrument">
-                </select>
+<div class="row">
+    <div class="col-sm-8 col-md-6">
+        <div class="panel panel-primary">
+            <div class="panel-heading" onclick="hideFilter();">
+                Selection Filter
             </div>
-	   </td>  
-    </tr>
- 
-    <tr>
-        <td>Actions</td>
-        <td colspan="3">
-            <input type="submit" name="filter" value="Show Data" id="filter" class="button"/>
-        </td>
-    </tr>
-</table>
-<input type="hidden" name="test_name" value="data_team_helper" />
+            <div class="panel-body" id="panel-body">
+                <form method="post">
+                    <div class="row">
+                        <div class="form-group col-xs-12">
+                            <label class="col-sm-4">Visit_labels</label>
+                            <div class="col-sm-8">
+                                <select name="visit_label" onchange="changefieldOptions()" id="visit_label" class="form-control input-sm">
+                                    {foreach from=$visitLabels item=name key=val}
+                                       {if $name eq $visit_label}
+                                           <option value="{$name}" selected="selected"> {$name}</option>
+                                        {else}
+                                            <option value="{$name}"> {$name}</option>
+                                        {/if}
+                                    {/foreach}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-xs-12">
+                            <label class="col-sm-4">Instruments:</label>
+                            <div class="col-sm-8">
+                                <select name="instrument" id="instrument" class="form-control input-sm">
+                                    <option></option>
+                                    <option value="{$instrumentvalue}" selected="selected">{$instrumentvalue}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-xs-12">
+                            <label class="col-sm-4">{$form.users.label}</label>
+                            <div class="col-sm-8">
+                                {$form.users.html}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-xs-12">
+                            <div class="col-sm-8 col-sm-offset-4">
+                                <input type="submit" name="filter" value="Show Data" id="filter" class="btn btn-sm btn-primary col-xs-12"/>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="test_name" value="data_team_helper" />
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
-</form>
 <br>
-
-<table border="1" valign="top" class="std">
-    <tr>
-        <td> Current Single Data_entry Completion Percentage (for <b>{$visit_label}</b> and instrument: <b>{$test_name}</b>)&nbsp&nbsp  </td>
-        <td> &nbsp&nbsp&nbsp{$percent_completed}%</td>
-    </tr>
-    
-</table>
-
+{if $test_name}
+    <table border="1" valign="top" class="std">
+        <tr>
+            <td> Current Single Data_entry Completion Percentage (for <b>{$visit_label}</b> and instrument: <b>{$test_name}</b>)&nbsp&nbsp  </td>
+            <td> &nbsp&nbsp&nbsp{$percent_completed}%</td>
+        </tr>
+        
+    </table>
+{/if}
 <table>
   <tr>
  		<td>
@@ -66,7 +74,7 @@
 
 
 <form>
-<table class="fancytable" border="0">
+<table class="table table-primary table-bordered dynamictable" border="0">
     {if $form.total.html}
         <tr class="nohover">
             <td colspan="7" align="right" style="border: none;" class="nohover">Showing <em>{$form.total.html}</em> results.</td>
@@ -77,7 +85,7 @@
             <td nowrap="nowrap" colspan="7" class="error">{$error}</td>
         </tr>
     {/foreach}
-    <tr>
+    <tr class="info">
         <th>Visit label</th>
         <th>Instrument</th>
         <th>Names (Instrument_Fieldname)</th>
@@ -111,8 +119,10 @@
             {if isset($elements_array[$element][$visit_label].FeedbackList) }
         	    <td nowrap="nowrap" width="40" valign="top">
         	       {foreach from=$elements_array[$element][$visit_label].FeedbackList key=feedback item=FeedbackList}
-                       <a href="#" onClick="javascript:window.open('feedback_bvl_popup.php?test_name={$FeedbackList.test_name}&candID={$FeedbackList.CandID}&sessionID={$FeedbackList.session_id}&commentID={$FeedbackList.commentid}#{$FeedbackList.feedbackid}','bvl_feedback','width=900,height=500,toolbar=no,location=no,status=yes,scrollbars=yes,resizable=yes')">{$FeedbackList.PSCID}_{$FeedbackList.visit_label}</a>
-        	       {/foreach}
+                       <div>
+                           <a href="#" onClick="javascript:window.open('feedback_bvl_popup.php?test_name={$FeedbackList.test_name}&candID={$FeedbackList.CandID}&sessionID={$FeedbackList.session_id}&commentID={$FeedbackList.commentid}#{$FeedbackList.feedbackid}','bvl_feedback','width=900,height=500,toolbar=no,location=no,status=yes,scrollbars=yes,resizable=yes'); return false;">{$FeedbackList.PSCID}_{$FeedbackList.visit_label}</a>
+                       </div>
+                   {/foreach}
                 </td>
                 {**Currently the color option only works if the status is created as a separate cell (tr or td)...otherwise ...the color will be unreadable
                 So for now it is commented out...
@@ -121,7 +131,9 @@
                     {foreach from=$elements_array[$element][$visit_label].FeedbackList key=feedback item=FeedbackList}
         				 <!--font solid color="{$FeedbackList.QC_color}"><b> {$FeedbackList.Status}</b> </font-->
         				 <!--font solid color="{$FeedbackList.QC_color}"><b> {$FeedbackList.Status}</b> </font-->
-        				 {$FeedbackList.Status}
+                        <div>
+                            {$FeedbackList.Status}
+                        </div>
         		    {/foreach}
         	    </td>
             {else}
@@ -133,7 +145,7 @@
             <td nowrap="nowrap" valign="top">
                 {foreach from=$Conflicts item=conflict}
                     {if ($conflict.FieldName eq $elements_array[$element][$visit_label].sourcefield) and $conflict.visit_label eq $visit_label}
-                        <a href="main.php?Question={$conflict.FieldName}&Instruments={$conflict.test_name_display}&Visits={$conflict.visit_label}&PSCID={$conflict.PSCID}&site=all&test_name=conflict_resolver" target="_blank">{$conflict.PSCID}_{$conflict.visit_label}<BR></a>
+                        <a href="#" class="conflict_resolver_link" data-pscid="{$conflict.PSCID}" data-question="{$conflict.FieldName}" data-instrument="{$conflict.TableName}" data-visits="{$conflict.visit_label}">{$conflict.PSCID}_{$conflict.visit_label}<BR></a>
                     {/if}
                 {/foreach}
             </td>

@@ -46,6 +46,7 @@ set_include_path(get_include_path().":../project/libraries:../php/libraries:");
 // path to config file
 $configFile = "../project/config.xml";
 
+require_once __DIR__ . "/../vendor/autoload.php";
 require_once "NDB_Client.class.inc";
 require_once "NDB_BVL_Battery.class.inc";
 $client = new NDB_Client();
@@ -259,7 +260,7 @@ function addInstrument($sessionID, $testName)
         return PEAR::raiseError("Error: Database user named " . getenv('USER') . " does not exist. Please create and then retry script\n");
     }
     if (PEAR::isError($user)) {
-    	return ("Error, failed to create User object for (".$getenv('USER')."):".$user->getMessage()." \n");
+    	return ("Error, failed to create User object for (".getenv('USER')."):".$user->getMessage()." \n");
     }
 
     // check the args
@@ -312,13 +313,18 @@ function addInstrument($sessionID, $testName)
      */
     // feedback object
     print $user->getUsername();
-    $feedback =& NDB_BVL_Feedback::singleton($user->getUsername(), null, $sessionID, $commentID);
-    if (PEAR::isError($feedback)) {
-        return PEAR::raiseError("Failed to create feedback object: " . $feedback->getMessage());
+    $feedback = NDB_BVL_Feedback::singleton($user->getUsername(), null, $sessionID);
+
+    //get thread feedback type
+    $threadFeedbackType = $feedback->getFeedbackTypeIdByName('other');
+    if (empty($threadFeedbackType))
+    {
+        //create thread feedback type "Other", if it does not exist
+        $threadFeedbackType = $feedback->createFeedbackType("Other", "Other");
     }
 
     // add the new thread
-    $success = $feedback->createThread('instrument', '5', "Instrument ($testName) has been added to the battery. You may now complete data entry for this instrument. Please respond to this feedback to acknowledge the changes.", 'Y');
+    $success = $feedback->createThread('instrument', $threadFeedbackType, "Instrument ($testName) has been added to the battery. You may now complete data entry for this instrument. Please respond to this feedback to acknowledge the changes.", 'Y');
     if (PEAR::isError($success)) {
         return PEAR::raiseError("Failed to create feedback: ". $success->getMessage());
     }

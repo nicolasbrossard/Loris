@@ -68,14 +68,14 @@ class NDB_Form_final_radiological_review extends NDB_Form
      */
     function final_radiological_review()
     {
-        $yes_no = array('' => '', '1' => 'Yes', '0' => 'No');
+        $yes_no = array('' => '', 'yes' => 'Yes', 'no' => 'No');
         $exclusionary = array('' => '',
                 'exclusionary' => 'Exclusionary',
                 'non_exclusionary' => 'Non-Exclusionary'
         );
-        $results = array('' => '', 
-                         'normal' => 'Normal', 
-                         'abnormal' => 'Abnormal', 
+        $results = array('' => '',
+                         'normal' => 'Normal',
+                         'abnormal' => 'Abnormal',
                          'atypical' => 'Atypical');
         $abnormality = array(null => '',
                             '0' => 'None',
@@ -203,9 +203,9 @@ class NDB_Form_final_radiological_review extends NDB_Form
 
 
             $history = $DB->pselect(
-                'SELECT userID, changeDate, col, old, new FROM history 
-                WHERE tbl=:histtbl AND primaryVals= :primKey ORDER BY changeDate DESC', 
-                array('histtbl' =>  $this->__table, 'primKey' => $this->identifier)
+                'SELECT userID, changeDate, col, old, new FROM final_radiological_review_history
+                WHERE CommentID= :primKey ORDER BY changeDate DESC',
+                array('primKey' => $this->identifier)
             );
 
             $history_display = '';
@@ -287,24 +287,54 @@ class NDB_Form_final_radiological_review extends NDB_Form
         $this->stripEmpty($values, 'Review_Done2');
         $this->stripEmpty($values, 'Finalized');
 
+        /* With the Loris Forms all the static elements on the page are submitted
+         * in the post request. This should be fixed in the base class but doing
+         * this temporary fix in the module for the 15.04 release.
+         */
+        $to_unset = array('DICOM_Folder_Name','DICOM_ID','Original_Scan_Done',
+                          'Visit_label','CandID','PSCID','history','CommentID',
+                          'Original_Review_Results','SessionID','Original_Examiner',
+                          'Original_Exclusionary','Original_Incidental_Findings');
+        foreach($to_unset as $key) {
+            unset($values[$key]);
+        }
+
+        if (!(is_null($_SESSION['State']))) {
+            $currentUser           = User::singleton($_SESSION['State']->getUsername());
+            $userID                = $currentUser->getData("UserID");
+        }
+
         $DB =& Database::singleton();
         if (isset($this->identifier)) {
             $exists = $DB->pselectRow(
-                "SELECT 'x' FROM " . $this->__table . " WHERE CommentID=:CID",
+                "SELECT * FROM " . $this->__table . " WHERE CommentID=:CID",
                 array('CID' => $this->identifier)
             );
-            
+
             if ($exists == array()) {
                 $insert_values = array_merge(
-                    array('CommentID' => $this->identifier), 
+                    array('CommentID' => $this->identifier),
                     $values
                 );
                 $DB->insert($this->__table, $insert_values);
             } else {
+                /* update the final radiological review history table
+                 * if any field was updated */
+                foreach($values as $key=>$val) {
+                    if ($exists[$key] != $val) {
+                        $update_vals = array('col'=>$key,
+                                'new'=>$val,
+                                'old'=>$exists[$key],
+                                'CommentID'=>$this->identifier,
+                                'userID'=>$userID );
+
+                        $DB->insert("final_radiological_review_history", $update_vals);
+                    }
+                }
                 $DB->update(
-                    $this->__table, $values, 
-                    array('CommentID' => $this->identifier)
-                );
+                        $this->__table, $values,
+                        array('CommentID' => $this->identifier)
+                        );
             }
 
         }

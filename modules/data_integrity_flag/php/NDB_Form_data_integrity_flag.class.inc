@@ -100,7 +100,7 @@ class NDB_Form_data_integrity_flag extends NDB_Form
         $this->tpl_data['visitLabels'] = $visit_array;
         $this->tpl_data['visit_label'] = $_REQUEST['visit_label'];
         $this->tpl_data['test_name'] = $instrument;
-        $this->form->AddElement('select','users','Users',array_merge(array(''=>'All Users'),$this->getDIUsers()),array('id'=>'users'));
+        $this->addSelect('users','Users',array_merge(array(''=>'All Users'),$this->getDIUsers()),array('id'=>'users'));
 
 
 
@@ -135,9 +135,16 @@ class NDB_Form_data_integrity_flag extends NDB_Form
                 'maxYear'         => $study['endYear']
                 );
 
-        $this->form->addElement('date', 'date', "Date:", $dateOptions); //date drop down
-        $this->form->addElement("select", 'flag_status', 'Flag Status:', array(''=>null,"1"=>'1- Ready For Review',"2"=>'2- Review Completed', "3"=>'3- Feedbacks Closed', "4"=>'4- Finalization')); //flag status
-        $this->form->addElement("textarea", 'comment','Comment:',array('rows' => 2, 'cols' => 20));//comment box
+        $this->addBasicDate('date', "Date:", $dateOptions); //date drop down
+        $flag_status_list = array(
+            '' => null,
+            "1" => '1- Ready For Review',
+            "2" => '2- Review Completed',
+            "3" => '3- Feedbacks Closed',
+            "4" => '4- Finalization'
+        );
+        $this->addSelect('flag_status', 'Flag Status:', $flag_status_list); //flag status
+        $this->addBasicTextArea('comment','Comment:',array('rows' => 2, 'cols' => 20));//comment box
 
         //static or hiddent elements
         $this->form->addElement("static", "instrument", "Instrument: ");//comment box
@@ -160,7 +167,7 @@ class NDB_Form_data_integrity_flag extends NDB_Form
             $this->tpl_data['elements_list_names'] [] = $data['dataflag_id'];
             $full_name = $DB->pselectOne("SELECT Full_name from test_names where Test_name = :tname",array('tname'=>$data['dataflag_instrument']));
             $this->tpl_data['elements_array'][$data['dataflag_id']]['date']= $data['dataflag_date'];
-            $this->tpl_data['elements_array'][$data['dataflag_id']]['flag'] = $data['dataflag_status'];
+            $this->tpl_data['elements_array'][$data['dataflag_id']]['flag'] = $flag_status_list[$data['dataflag_status']];
             $this->tpl_data['elements_array'][$data['dataflag_id']]['comment']= $data['dataflag_comment'];
             $this->tpl_data['elements_array'][$data['dataflag_id']]['instrument']= $data['dataflag_instrument'];
             $this->tpl_data['elements_array'][$data['dataflag_id']]['full_name']= $full_name;

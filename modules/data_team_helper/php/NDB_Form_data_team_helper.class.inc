@@ -15,7 +15,7 @@ class NDB_Form_data_team_helper extends NDB_Form
         if(Utility::isErrorX($user)) {
             return PEAR::raiseError("User Error: ".$user->getMessage());
         }
-        return true;
+        return ($user->hasPermission('data_team_helper'));
     }
 
     function _getDefaults()
@@ -42,6 +42,7 @@ class NDB_Form_data_team_helper extends NDB_Form
         $defaults["instrument"] = $_REQUEST['instrument'];
         $defaults["FieldName"] = $_REQUEST['FieldName'];
         $defaults["visit_label"] = $_REQUEST['visit_label'];
+        $this->tpl_data['instrumentvalue'] = $_REQUEST['instrument'];
         return $defaults;
     }
 

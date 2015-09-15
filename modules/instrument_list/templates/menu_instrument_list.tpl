@@ -3,8 +3,7 @@
 <table border="0" valign="bottom" width="100%"><td class="controlPanelSection"><strong>Behavioral Battery of Instruments</strong></td></table>
 
 <!-- table with list of instruments and links to open them -->
-<div class="table-responsive">
-<table class="table table-hover table-bordered" cellpadding="2">
+<table class="table table-hover table-bordered dynamictable" cellpadding="2">
 {section name=group loop=$instruments}
     <!-- print the sub group header row -->
     <thead>
@@ -46,4 +45,9 @@
      <tr><td nowrap="nowrap">The battery has no registered instruments</td></tr>
 {/section}
 </table>
+  <div class="col-xs-12 row">
+  </div>
+  <div class="col-xs-12 row">
+    <button class="btn btn-primary" onclick="location.href='main.php?test_name=imaging_browser&subtest=viewSession&sessionID={$sessionID}'">View Imaging data</button>
+  </div>
 </div>

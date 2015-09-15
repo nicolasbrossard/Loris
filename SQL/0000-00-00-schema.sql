@@ -61,6 +61,28 @@ LOCK TABLES `candidate` WRITE;
 /*!40000 ALTER TABLE `candidate` ENABLE KEYS */;
 UNLOCK TABLES;
 
+
+--
+-- Table structure for table `caveat_options`
+--
+
+DROP TABLE IF EXISTS `caveat_options`;
+CREATE TABLE `caveat_options` (
+  `ID` int(6),
+  `Description` varchar(255),
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- 
+-- Dumping data for table `caveat_options`
+-- 
+
+LOCK TABLES `caveat_options` WRITE;
+/*!40000 ALTER TABLE `caveat_options` DISABLE KEYS */;
+/*!40000 ALTER TABLE `caveat_options` ENABLE KEYS */;
+UNLOCK TABLES;
+
+
 --
 -- Table structure for table `document_repository`
 --
@@ -266,10 +288,10 @@ CREATE TABLE `feedback_mri_comment_types` (
 LOCK TABLES `feedback_mri_comment_types` WRITE;
 /*!40000 ALTER TABLE `feedback_mri_comment_types` DISABLE KEYS */;
 INSERT INTO `feedback_mri_comment_types` VALUES 
-    (1,'Geometric intensity','volume','a:2:{s:5:\"field\";s:19:\"Geometric_intensity\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"Good\";i:2;s:4:\"Fair\";i:3;s:4:\"Poor\";i:4;s:12:\"Unacceptable\";}}'),
-    (2,'Intensity','volume','a:2:{s:5:\"field\";s:9:\"Intensity\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"Good\";i:2;s:4:\"Fair\";i:3;s:4:\"Poor\";i:4;s:12:\"Unacceptable\";}}'),
-    (3,'Movement artifact','volume','a:2:{s:5:\"field\";s:30:\"Movement_artifacts_within_scan\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"None\";i:2;s:6:\"Slight\";i:3;s:4:\"Poor\";i:4;s:12:\"Unacceptable\";}}'),
-    (4,'Packet movement artifact','volume','a:2:{s:5:\"field\";s:34:\"Movement_artifacts_between_packets\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"None\";i:2;s:6:\"Slight\";i:3;s:4:\"Poor\";i:4;s:12:\"Unacceptable\";}}'),
+    (1,'Geometric distortion','volume','a:2:{s:5:\"field\";s:20:\"Geometric_distortion\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"Good\";i:2;s:4:\"Fair\";i:3;s:4:\"Poor\";i:4;s:12:\"Unacceptable\";}}'),
+    (2,'Intensity artifact','volume','a:2:{s:5:\"field\";s:18:\"Intensity_artifact\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"Good\";i:2;s:4:\"Fair\";i:3;s:4:\"Poor\";i:4;s:12:\"Unacceptable\";}}'),
+    (3,'Movement artifact','volume','a:2:{s:5:\"field\";s:30:\"Movement_artifacts_within_scan\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"None\";i:2;s:15:\"Slight Movement\";i:3;s:12:\"Poor Quality\";i:4;s:12:\"Unacceptable\";}}'),
+    (4,'Packet movement artifact','volume','a:2:{s:5:\"field\";s:31:\"Movement_artifacts_between_packets\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"None\";i:2;s:15:\"Slight Movement\";i:3;s:12:\"Poor Quality\";i:4;s:12:\"Unacceptable\";}}'),
     (5,'Coverage','volume','a:2:{s:5:\"field\";s:8:\"Coverage\";s:6:\"values\";a:5:{i:0;s:0:\"\";i:1;s:4:\"Good\";i:2;s:4:\"Fair\";i:3;s:5:\"Limit\";i:4;s:12:\"Unacceptable\";}}'),	    (6,'Overall','volume',''),
     (7,'Subject','visit',''),	
     (8,'Dominant Direction Artifact (DWI ONLY)','volume','a:2:{s:5:"field";s:14:"Color_Artifact";s:6:"values";a:5:{i:0;s:0:"";i:1;s:4:"Good";i:2;s:4:"Fair";i:3;s:4:"Poor";i:4;s:12:"Unacceptable";}}'),
@@ -335,7 +357,9 @@ INSERT INTO `feedback_mri_predefined_comments` VALUES
 	(35,6,"Incorrect diffusion direction (DWI ONLY)"),
 	(36,6,"Duplicate series"),
 	(37,3,"slice wise artifact (DWI ONLY)"),
-	(38,3,"gradient wise artifact (DWI ONLY)");
+	(38,3,"gradient wise artifact (DWI ONLY)"),
+    (39,2,"susceptibility artifact due to anatomy");
+
 /*!40000 ALTER TABLE `feedback_mri_predefined_comments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -346,22 +370,15 @@ UNLOCK TABLES;
 DROP TABLE IF EXISTS `feedback_mri_comments`;
 CREATE TABLE `feedback_mri_comments` (
   `CommentID` int(11) unsigned NOT NULL auto_increment,
-  `MRIID` int(11) unsigned default NULL,
   `FileID` int(10) unsigned default NULL,
   `SeriesUID` varchar(64) default NULL,
   `EchoTime` double default NULL,
   `SessionID` int(10) unsigned default NULL,
-  `PatientName` varchar(255) default NULL,
-  `CandID` varchar(6) default NULL,
-  `VisitNo` int(2) default NULL,
   `CommentTypeID` int(11) unsigned NOT NULL default '0',
   `PredefinedCommentID` int(11) unsigned default NULL,
   `Comment` text,
   `ChangeTime` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   PRIMARY KEY  (`CommentID`),
-  KEY `MRIID` (`MRIID`),
-  KEY `Candidate` (`CandID`,`VisitNo`),
-  KEY `NonCandidate` (`PatientName`),
   KEY `FK_feedback_mri_comments_1` (`CommentTypeID`),
   KEY `FK_feedback_mri_comments_2` (`PredefinedCommentID`),
   KEY `FK_feedback_mri_comments_3` (`FileID`),
@@ -515,9 +532,7 @@ CREATE TABLE `history` (
   `changeDate` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   `userID` varchar(255) NOT NULL default '',
   `type` char(1),
-  PRIMARY KEY  (`id`),
-  KEY `FK_history_1` (`userID`),
-  CONSTRAINT `FK_history_1` FOREIGN KEY (`userID`) REFERENCES `users` (`UserID`)
+  PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='This table keeps track of ongoing changes in the database. ';
 
 --
@@ -612,6 +627,12 @@ CREATE TABLE `mri_protocol` (
 LOCK TABLES `mri_protocol` WRITE;
 /*!40000 ALTER TABLE `mri_protocol` DISABLE KEYS */;
 /*!40000 ALTER TABLE `mri_protocol` ENABLE KEYS */;
+INSERT INTO mri_protocol (Center_name,Scan_type,TR_range,TE_range,time_range) VALUES ('ZZZZ',48,'8000-14000','80-130','0-200');
+INSERT INTO mri_protocol (Center_name,Scan_type,TR_range,TE_range,time_range) VALUES ('ZZZZ',40,'1900-2700','10-30','0-500');
+INSERT INTO mri_protocol (Center_name,Scan_type,TR_range,TE_range,time_range) VALUES ('ZZZZ',44,'2000-2500','2-5',NULL);
+INSERT INTO mri_protocol (Center_name,Scan_type,TR_range,TE_range,time_range) VALUES ('ZZZZ',45,'3000-9000','100-550',NULL);
+
+
 UNLOCK TABLES;
 
 --
@@ -693,10 +714,13 @@ DROP TABLE IF EXISTS `notification_spool`;
 CREATE TABLE `notification_spool` (
   `NotificationID` int(11) NOT NULL auto_increment,
   `NotificationTypeID` int(11) NOT NULL default '0',
-  `TimeSpooled` int(11) NOT NULL default '0',
+  `ProcessID` int(11) NOT NULL DEFAULT '0',
+  `TimeSpooled` datetime DEFAULT NULL,
   `Message` text,
+  `Error` enum('Y','N') default NULL,
   `Sent` enum('N','Y') NOT NULL default 'N',
   `CenterID` tinyint(2) unsigned default NULL,
+  `Origin` varchar(255) DEFAULT NULL,
   PRIMARY KEY  (`NotificationID`),
   KEY `FK_notification_spool_1` (`NotificationTypeID`),
   KEY `FK_notification_spool_2` (`CenterID`),
@@ -732,15 +756,22 @@ CREATE TABLE `notification_types` (
 
 LOCK TABLES `notification_types` WRITE;
 /*!40000 ALTER TABLE `notification_types` DISABLE KEYS */;
-INSERT INTO `notification_types` VALUES 
-	(1,'mri new study',0,'New studies processed by the MRI upload handler'),
-	(2,'mri new series',0,'New series processed by the MRI upload handler'),
-	(3,'mri upload handler emergency',1,'MRI upload handler emergencies'),
-	(4,'mri staging required',1,'New studies received by the MRI upload handler that require staging'),
-	(5,'mri invalid study',0,'Incorrectly labelled studies received by the MRI upload handler'),
-	(7,'hardcopy request',0,'Hardcopy requests'),
-	(9,'visual bvl qc',0,'Timepoints selected for visual QC'),
-	(10,'mri qc status',0,'MRI QC Status change');
+INSERT INTO `notification_types` (Type,private,Description) VALUES 
+    ('mri new study',0,'New studies processed by the MRI upload handler'),
+    ('mri new series',0,'New series processed by the MRI upload handler'),
+    ('mri upload handler emergency',1,'MRI upload handler emergencies'),
+    ('mri staging required',1,'New studies received by the MRI upload handler that require staging'),
+    ('mri invalid study',0,'Incorrectly labelled studies received by the MRI upload handler'),
+    ('hardcopy request',0,'Hardcopy requests'),
+    ('visual bvl qc',0,'Timepoints selected for visual QC'),
+    ('mri qc status',0,'MRI QC Status change');
+
+INSERT INTO notification_types (Type,private,Description) VALUES 
+    ('minc insertion',1,'Insertion of the mincs into the mri-table'),
+    ('tarchive loader',1,'calls specific Insertion Scripts'),
+    ('tarchive validation',1,'Validation of the dicoms After uploading'),
+    ('mri upload runner',1,'Validation of DICOMS before uploading'),
+    ('mri upload processing class',1,'Validation and execution of DicomTar.pl and TarchiveLoader');
 /*!40000 ALTER TABLE `notification_types` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -856,7 +887,7 @@ LOCK TABLES `parameter_type` WRITE;
 INSERT INTO `parameter_type` VALUES 
 	(1,'Selected','varchar(10)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0),
 	(2,'Geometric_intensity','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
-	(3,'Intensity','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
+	(3,'Intensity_artifact','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
 	(4,'Movement_artifacts_within_scan','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
 	(5,'Movement_artifacts_between_packets','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
 	(6,'Coverage','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
@@ -951,31 +982,46 @@ CREATE TABLE `permissions` (
 LOCK TABLES `permissions` WRITE;
 /*!40000 ALTER TABLE `permissions` DISABLE KEYS */;
 INSERT INTO `permissions` VALUES 
-	(1,'superuser','There can be only one Highlander','1'),
-	(2,'user_accounts','User management','2'),
-	(3,'user_accounts_multisite','Across all sites create and edit users','2'),
-	(4,'context_help','Edit help documentation','2'),
-	(5,'bvl_feedback','Behavioural QC','1'),
-	(6,'mri_feedback','Edit MRI feedback threads','2'),
-	(7,'mri_efax','Edit MRI Efax files','2'),
-	(8,'send_to_dcc','Send to DCC','2'),
-	(9,'unsend_to_dcc','Reverse Send from DCC','2'),
-	(10,'access_all_profiles','Across all sites access candidate profiles','2'),
-	(11,'data_entry','Data entry','1'),
-	(12,'certification','Certify examiners','2'),
-	(13,'certification_multisite','Across all sites certify examiners','2'),
-	(14,'timepoint_flag','Edit exclusion flags','2'),
-	(15,'timepoint_flag_evaluate','Evaluate overall exclusionary criteria for the timepoint','2'),
-	(16,'mri_safety','Review MRI safety form for accidental findings','2'),
-	(17,'conflict_resolver','Resolving conflicts','2'),
-	(18,'data_dict','Parameter Type description','2'),
-	(19,'violated_scans','Violated Scans','2'),
-	(20,'violated_scans_modifications','Editing the MRI protocol table (Violated Scans module)','2'),
-	(21,'data_integrity_flag','Data Integrity Flag','2'),
-	(22,'config','Edit configuration settings','2'),
-	(23,'edit_final_radiological_review','Can edit final radiological reviews','2'),
-	(24,'view_final_radiological_review','Can see final radiological reviews','2');
-
+    (1,'superuser','There can be only one Highlander','1'),
+    (2,'user_accounts','User management','2'),
+    (3,'user_accounts_multisite','Across all sites create and edit users','2'),
+    (4,'context_help','Edit help documentation','2'),
+    (5,'bvl_feedback','Behavioural QC','1'),
+    (6,'imaging_browser_qc','Edit imaging browser QC status','2'),
+    (7,'mri_efax','Edit MRI Efax files','2'),
+    (8,'send_to_dcc','Send to DCC','2'),
+    (9,'unsend_to_dcc','Reverse Send from DCC','2'),
+    (10,'access_all_profiles','Across all sites access candidate profiles','2'),
+    (11,'data_entry','Data entry','1'),
+    (12,'examiner_view','Add and certify examiners','2'),
+    (13,'examiner_multisite','Across all sites add and certify examiners','2'),
+    (14,'training','View and complete training','2'),
+    (15,'timepoint_flag','Edit exclusion flags','2'),
+    (16,'timepoint_flag_evaluate','Evaluate overall exclusionary criteria for the timepoint','2'),
+    (17,'conflict_resolver','Resolving conflicts','2'),
+    (18,'data_dict_view','View Data Dictionary (Parameter type descriptions)','2'),
+    (19,'violated_scans_view_allsites','Violated Scans: View all-sites Violated Scans','2'),
+    (20,'violated_scans_edit','Violated Scans: Edit MRI protocol table','2'),
+    (21,'data_integrity_flag','Data Integrity Flag','2'),
+    (22,'config','Edit configuration settings','2'),
+    (23,'edit_final_radiological_review','Can edit final radiological reviews','2'),
+    (24,'view_final_radiological_review','Can see final radiological reviews','2'),
+    (25,'imaging_browser_view_site','View own-site Imaging Browser pages','2'),
+    (26,'imaging_browser_view_allsites', 'View all-sites Imaging Browser pages', '2'),
+    (27,'dicom_archive_view_allsites', 'Across all sites view Dicom Archive module and pages', '2'),
+    (28,'reliability_edit_all', 'Access and Edit all Reliability profiles', '2'),
+    (29,'reliability_swap_candidates', 'Swap Reliability candidates across all sites', '2'),
+    (30,'instrument_builder', 'Instrument Builder: Create and Edit instrument forms', '2'),
+    (31,'data_dict_edit','Edit Data Dictionary','2'),
+    (32,'data_team_helper','Data Team Helper','2'),
+    (33,'candidate_parameter_view','View Candidate Parameters','2'),
+    (34,'candidate_parameter_edit','Edit Candidate Parameters','2'),
+    (35,'genomic_browser_view_site','View Genomic Browser data from own site','2'),
+    (36,'genomic_browser_view_allsites','View Genomic Browser data across all sites','2'),
+    (37,'document_repository_view','View and upload files in Document Repository','2'),
+    (38,'document_repository_delete','Delete files in Document Repository','2'),
+    (39,'server_processes_manager','View and manage server processes','2'),
+    (40,'mri_upload','MRI Uploader','2');
 /*!40000 ALTER TABLE `permissions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1036,81 +1082,6 @@ LOCK TABLES `psc` WRITE;
 /*!40000 ALTER TABLE `psc` DISABLE KEYS */;
 INSERT INTO `psc` VALUES (1,'Data Coordinating Center','','','',0,'','','','','','DCC','','','Y');
 /*!40000 ALTER TABLE `psc` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `query_gui_downloadable_queries`
---
-
-DROP TABLE IF EXISTS `query_gui_downloadable_queries`;
-CREATE TABLE `query_gui_downloadable_queries` (
-  `queryID` int(10) unsigned NOT NULL auto_increment,
-  `query` text,
-  `filename` varchar(255) default NULL,
-  `userID` int(11) unsigned default NULL,
-  `downloadDate` timestamp NOT NULL default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
-  PRIMARY KEY  (`queryID`),
-  KEY `FK_query_gui_downloadable_queries_1` (`userID`),
-  CONSTRAINT `FK_query_gui_downloadable_queries_1` FOREIGN KEY (`userID`) REFERENCES `users` (`ID`) ON DELETE NO ACTION ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Dumping data for table `query_gui_downloadable_queries`
---
-
-LOCK TABLES `query_gui_downloadable_queries` WRITE;
-/*!40000 ALTER TABLE `query_gui_downloadable_queries` DISABLE KEYS */;
-/*!40000 ALTER TABLE `query_gui_downloadable_queries` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `query_gui_stored_queries`
---
-
-DROP TABLE IF EXISTS `query_gui_stored_queries`;
-CREATE TABLE `query_gui_stored_queries` (
-  `qid` int(10) unsigned NOT NULL auto_increment,
-  `userID` int(11) unsigned NOT NULL default '0',
-  `name` varchar(255) NOT NULL default '',
-  `selected_fields` text,
-  `conditionals` text,
-  `conditionals_groups` text,
-  `access` enum('private','public') NOT NULL default 'private',
-  PRIMARY KEY  (`qid`),
-  KEY `name` (`name`),
-  KEY `FK_query_gui_stored_queries_1` (`userID`),
-  CONSTRAINT `FK_query_gui_stored_queries_1` FOREIGN KEY (`userID`) REFERENCES `users` (`ID`) ON DELETE NO ACTION ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Dumping data for table `query_gui_stored_queries`
---
-
-LOCK TABLES `query_gui_stored_queries` WRITE;
-/*!40000 ALTER TABLE `query_gui_stored_queries` DISABLE KEYS */;
-/*!40000 ALTER TABLE `query_gui_stored_queries` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `query_gui_user_files`
---
-DROP TABLE IF EXISTS `query_gui_user_files`;
-CREATE TABLE query_gui_user_files (
-    UserFileID integer auto_increment primary key,
-    UserID integer REFERENCES users(ID),
-    filename varchar(255),
-    downloadDate timestamp DEFAULT CURRENT_TIMESTAMP,
-    md5sum varchar(32),
-    status enum('ready', 'packaging', 'expired')
-);
-
---
--- Dumping data for table `query_gui_user_files`
---
-
-LOCK TABLES `query_gui_user_files` WRITE;
-/*!40000 ALTER TABLE `query_gui_user_files` DISABLE KEYS */;
-/*!40000 ALTER TABLE `query_gui_user_files` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1262,6 +1233,7 @@ CREATE TABLE `tarchive_series` (
   `PhaseEncoding` varchar(255) default NULL,
   `NumberOfFiles` int(11) NOT NULL default '0',
   `SeriesUID` varchar(255) default NULL,
+  `Modality` ENUM ('MR', 'PT') default NULL,
   PRIMARY KEY  (`TarchiveSeriesID`),
   KEY `TarchiveID` (`TarchiveID`),
   CONSTRAINT `tarchive_series_ibfk_1` FOREIGN KEY (`TarchiveID`) REFERENCES `tarchive` (`TarchiveID`) ON DELETE CASCADE
@@ -1414,8 +1386,8 @@ CREATE TABLE `users` (
   `PSCPI` enum('Y','N') NOT NULL default 'N',
   `DBAccess` varchar(10) NOT NULL default '',
   `Active` enum('Y','N') NOT NULL default 'Y',
-  `Examiner` enum('Y','N') NOT NULL default 'N',
   `Password_md5` varchar(34) default NULL,
+  `Password_hash` varchar(255) default NULL,
   `Password_expiry` date NOT NULL default '0000-00-00',
   `Pending_approval` enum('Y','N') default 'Y',
   `Doc_Repo_Notifications` enum('Y','N') default 'N',
@@ -1432,8 +1404,8 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` (ID,UserID,Real_name,First_name,Last_name,Email,CenterID,Privilege,PSCPI,DBAccess,Active,Examiner,Password_md5,Password_expiry) 
-VALUES (1,'admin','Admin account','Admin','account','admin@localhost',1,0,'N','','Y','N','4817577f267cc8bb20c3e58b48a311b9f6','2015-03-30');
+INSERT INTO `users` (ID,UserID,Real_name,First_name,Last_name,Email,CenterID,Privilege,PSCPI,DBAccess,Active,Password_md5,Password_expiry) 
+VALUES (1,'admin','Admin account','Admin','account','admin@localhost',1,0,'N','','Y','4817577f267cc8bb20c3e58b48a311b9f6','2015-03-30');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -1653,7 +1625,7 @@ CREATE TABLE `final_radiological_review` (
       `Final_Review_Results2` enum('normal','abnormal','atypical','not_answered') DEFAULT NULL,
       `Final_Examiner2` int(11) DEFAULT NULL,
       `Final_Exclusionary2` enum('exclusionary','non_exclusionary','not_answered') DEFAULT NULL,
-      `Review_Done2` tinyint(1) DEFAULT NULL,
+      `Review_Done2` enum('yes','no','not_answered') DEFAULT NULL,
       `SAS2` int(11) DEFAULT NULL,
       `PVS2` int(11) DEFAULT NULL,
       `Final_Incidental_Findings2` text,
@@ -1826,14 +1798,24 @@ INSERT INTO `help` (helpID, parentID, hash, topic, content, created, updated) VA
 (28,27,md5('statistics_site'), 'Per Instrument Statistics', 'Completion Statistics for each site are displayed, and are organized by instrument and visit label. The “Completion Count” column displays the number of completed entries per instrument. Each PSCID that appears in the “Incomplete Candidates” list was designed to be a link itself to that particular candidate’s page for the selected instrument.','2014-09-01 00:00:00',NULL),
 (29,27,md5('statistics_mri_site'), 'Imaging Integrity Statistics Breakdown', 'This page contains a table listing various Scan Insertion Issues in the left-most column. In the “Incomplete Entries” column, clicking on the candidate IDs will redirect the user to the appropriate Imaging form or dataset for that candidate.','2014-09-01 00:00:00',NULL),
 (30,-1,md5('datadict'), 'Data Dictionary', 'As the title suggests, the Data Dictionary houses definitions or descriptions for various instrument fields. In addition, like many other modules in LORIS, the Data Dictionary features a Selection Filter where the user may select from a number of drop-down select boxes and click “Show Data” to quickly locate desired information. The selection filter can be hidden using the upward arrow icon, and reopened using the downward arrow icon.','2014-09-01 00:00:00',NULL),
-(31,-1,md5('data_team_helper'), 'Data Team Helper', 'The “Data Team Helper” aids users in pinpointing which fields for specific forms have been completed and if there is any behavioural feedback that has been entered. The Selection Filter allows users to search by Visit Label and by Instrument. After choosing the desired options from the drop-down select boxes and clicking “Show Data”, a completion percentage will be calculated and will appear directly below the Selection Filter. \r\n\r\nThe results table will contain all fields from the selected instrument (or All Instruments if this feature was chosen) for the specified visit. Under the column “Names (Instrument_Fieldname)”, links to field names are provided, containing downloadable .csv files. These .csv files provide information for every candidate about data entry for that particular field at the specified visit (i.e. whether the data for this field is “Complete”, “In Progress” or Null). The “Link to Bvl Feedback” column contains links to pop-up feedback windows, where feedback for a particular field and candidate was previously entered. If such information was never entered, users will see “N/A”. For existing links to behavioural feedback, the corresponding status for this field will be listed under the column “Feedback Status”. \r\n\r\nAny candidates with conflicts between initial and double data entry will be listed under the “Conflicts” column. Clicking on the candidate’s link will open up a new tab, directing the user to the Conflict Resolver for the corresponding field and visit label for that candidate. A list of candidates for which data entry is incomplete for that particular instrument and visit label will be listed under “Incomplete Candidates”. The ID of each candidate listed is a link to that candidate’s data entry page.','2014-09-01 00:00:00',NULL),
+
+(31,-1,md5('data_team_helper'), 'Data Team Helper', "The 'Data Team Helper' allows the users to find out what the outstanding behaviourial feedbacks, conflicts and incompleted forms for the given candidate/field/instrument by filtering for the given visit-Label and Instrument.
+This module will also display the 'Single Data_entry Completion Percentage' for the given visit and instrument, only if the instrument is selected.\n\r
+The resulting table:\n
+- displays all fields from the selected instrument (or All Instruments if this feature was chosen) for the specified visit. \n
+- Under the column 'Names (Instrument_Fieldname)', the given field name is clickable which allows the user to download the data for the given field/instrument in the .csv format, containing the data and data_entry (i.e complete, in_pregress or null)  for every candidate for the given field and visit.\n
+- The 'Link to Bvl Feedback' column contains links to pop-up feedback window, where feedback for a particular field and candidate was previously entered, based on the field-name. If such information was never entered, users will see “N/A”. \n
+- For existing links to behavioural feedback, the corresponding status for this field will be listed under the column 'Feedback Status'. \n
+- Any candidates with conflicts between initial and double data entry will be listed under the 'Conflicts' column. Clicking on the candidate’s link will open up a new tab, directing the user to the Conflict Resolver for the corresponding field and visit label for that candidate. \n
+- A list of candidates for which data entry is incomplete for that particular instrument and visit label will be listed under 'Incomplete Candidates'. The ID of each candidate listed is a link to that candidate’s data entry page.\n",'2014-09-01 00:00:00',NULL),
+
 (32,-1,md5('data_integrity_flag'), 'Data Integrity','The Data Integrity module provides a direct way for users to view and update behavioural feedback at-a-glance, without requiring the user to navigate to the individual instrument forms or use the behavioural feedback pop-up window. \r\n\r\nThe Selection Filter allows users to search for existing feedback for a particular Visit Label, Instrument and User. Upon clicking “Show Data”, the user can add a new flag or behavioural feedback comment within the table directly below the Selection Filter. Users can also search through existing behavioural feedback results within the third table on the page. When adding new behavioural feedback, the date on which the flag was created must be indicated, as well as the Flag Status from the dropdown menu, and any additional comments. The “Save” button must be clicked in order to save the new behavioural flag. Click “Show updated data” or refresh the page to see the most recent behavioural flag within the results table.\r\n\r\nWithin the results table (third table on the Data Integrity page), links under the “Instrument” column will redirect the user to a detailed summary of each field for that particular instrument along with links to behavioural feedback and to incomplete candidates. Users can also view the date the flag was submitted, the Flag Status, any comments, data cleaning feedback, and UserID. Note, Flag Status is based on the codes used in the dropdown of the second table, where 1=Ready for Review, 2= Review Completed, 3=Feedbacks Closed, and 4=Finalization.' ,'2014-09-01 00:00:00',NULL),
 (33,-1,md5('user_accounts'), 'User Accounts', 'This feature of LORIS allows an administrator to create accounts and set the Roles and Permissions for database users. Like many modules in LORIS, User Accounts has a Selection Filter which allows the user to quickly search for desired information. The Selection Filter panel can be hidden using the upward arrow icon , and reopened using the downward arrow icon. Once the appropriate user has been found, the profile can be viewed by selecting the “Username” outlined in navy text.','2014-09-01 00:00:00',NULL),
 (34,33, md5('edit_user'), 'Add or Edit User Accounts', 'On this page, the user may enter and modify detailed information including address, degree, position and password. By checking a series of boxes under “Roles” and “Permissions” an administrator-level user may add, change or remove a user’s access to areas or functions in the database. After making changes, the administrator must click “Save” to ensure the permissions are updated. Note that permissions may be “Reset” by selecting the appropriate button. The administrator may also return to the list of users by selecting “Back”.' ,'2014-09-01 00:00:00',NULL),
 (35,-1,md5('instrument_builder'), 'Instrument Builder', 'The Instrument Builder module is designed to create new behavioural forms on the database. Existing instruments that were created using the instrument builder can be added under the “Load Instrument (optional)” heading. Most new instruments will be generated through the “Create Instrument” tab.\r\nThere are a series of buttons that specify the type of information each field in the form conveys.\r\n<b>Field Types, by Category :</b>\r\n<u>Information</u>\r\n• Header :: Used to specify a title for the page or section of the instrument. Text will appear in boldface at the centre of the page.\r\n• Label :: Functions as a subtitle to introduce a subset of questions\r\n• Scored Field :: Specifies any field that will have data entry. The type of scored field should be indicated under the “data entry” section\r\n<u>Data Entry</u>\r\n• Textbox :: Used for fields with free text, preferably short answers\r\n• Textarea :: Used for free text fields with longer inputs such as general comments, etc.\r\n• Dropdown :: Used for forced choice fields. The options for the dropdown menu need to be specified.  Once “Dropdown” is selected, the user will see an added row labeled as “Dropdown option”. Once the option has been entered, press “add option”. This new option should appear in the “preview” menu. The field “not_answered” will be automatically added to each dropdown menu. Once all options have been added, click “add row”. For subsequent dropdown scored fields, previous dropdown options will be preserved. If the user would like to create a new dropdown menu, click “reset”.\r\n• Multiselect :: Used for fields that have a select box where multiple options can be chosen.\r\n• Date :: Used for creating a date field such as Date of Birth\r\n• Numeric :: Used for creating a numeric field such as Height, Weight, etc.\r\n<u>Formatting</u>\r\n• Blank Line :: Can be used to separate sections within the same page of an instrument. The “Question Name” and “Question Text” can be left blank.\r\n• Page Break :: Used to add a new page within the instrument. The “Question Text” can be populated with the name of the new page, if desired.\r\n \r\n<b>Note on Question Names: </b>\r\n“Question Name” is the field name as it appears (only) in the back-end of the database. The “Question Text” will be seen by users on the database once the instrument has been uploaded. Users have the option of entering the same content into both the “Question Name” and “Question Text” boxes, but generally the “Question Name” is more brief and is formatted with the question number (ie. q1_*). Question names are unique and should not contain spaces. \r\n\r\nAfter each question entry, click “add row” to add the new field to the instrument code. \r\nThis should appear in table format at the bottom of the page. Each row can also be added to the table simply by pressing the enter key.\r\nIf a mistake was made while creating the instrument, users can directly edit the field names in the table at the bottom of the page. By clicking on the field name, a cursor should appear. The user can then make the appropriate changes and hit enter once finished. It is also possible to rearrange or delete fields using the “Options” column.\r\n \r\nOnce the user is satisfied with their instrument, it can be saved and validated.','2014-09-01 00:00:00',NULL),
 (36,33,md5('my_preferences'), 'My Preferences', 'This module allows the user to modify first name, last name, email address, and current password, as well as Document Repository preferences. All changes made to the user’s preferences must be saved by clicking “Save” after completion. Information can be reset using the “Reset” button.','2014-09-01 00:00:00',NULL),
 (37,30,NULL,'Put the topic here','Put the content here','2014-09-01 00:00:00',NULL),
-(38, -1, md5('configuration'), 'Configuration', 'The Configuration Module allows you to edit configuration settings from the front end. The configuration values are stored in the database, instead of in the config.xml file. Any settings that are not currently in the Configuration Module can still be found and edited from the config.xml file.\r\n\r\nTo edit any configuration settings, navigate to the field that you\'d like to edit in the module, click in the form area and edit/insert a value. Pressing enter while the edited form area is selected will save any changes that you make.\r\n\r\nYou should not edit more than two fields at a time as the submit function only saves the data in the form area that you have currently selected. Therefore, if you edit two different fields, only the one that is selected at the time you press enter will be saved. It is recommended to save any changes you make in one field by pressing enter, before moving on to other fields. This will prevent losing any changes that you make.\r\n\r\nSome configuration settings can accept multiple values. For these settings, you can add additional fields by pressing the "Add Field". This will create an empty form area where you can insert new values. You must press enter while the new area is selected to save the new value. You can remove a field by pressing the remove button below the form area.\r\n\r\nCare should be taken when editing the fields as there is currently no way to revert changes.', '2014-09-01 00:00:00', NULL),
+(38, -1, md5('configuration'), 'Configuration', 'The Configuration Module allows you to edit configuration settings from the front end. The configuration values are stored in the database, instead of in the config.xml file. Any settings that are not currently in the Configuration Module can still be found and edited from the config.xml file.\r\n\r\nTo edit any configuration settings, navigate to the field that you\'d like to edit in the module, and edit or insert a new value.\r\n\r\nSome configuration settings can accept multiple values. For these settings, you can add additional fields by pressing the "Add Field" button. This will create an empty form area where you can insert new values. You can delete any of the settings by pressing the red delete button attached to the form.\r\n\r\nPress the submit button at the bottom of the page to save your changes. You must press the submit button that is on the page where you are making the changes for the changes to be stored in the database. If you press the submit button on another configuration page, it will not store any changes made on other pages.\r\n\r\nCare should be taken when editing the fields as there is currently no way to revert changes. You can reset the form to its values on page load by pressing the reset button. However, this will not undo any changes made before the submit button has been pressed.', '2014-09-01 00:00:00', NULL),
 (39, -1,md5('help_editor'),'Help Editor','Help Editor module displays existing help content for various modules in LORIS. A list of entries will appear that organizes help content by Topic, Parent Topic and Content. The selection filter allows users to search by Topic or Search keyword. They search keyword returns result if the search item appears in either the Topic or Content text. At the top of the table, column headings will appear underlined and show a click icon when the user hovers over the heading title. Data can be sorted in ascending order according to a given column by clicking on the column heading (i.e. Topic, Parent Topic etc.), and by clicking again, in descending order.\r\n\r\nEditing Content : The content for any module can be edited by clicking on the Topic or Parent topic of choice. ','2014-09-01 00:00:00', NULL),
 (40,39,md5('edit_help_content'),'Edit Help Content','This page will display a title and existing content for each module. Both the title and the content are editable. The text can be updated directed on the page and to save the changes click on the Save button at the bottom.','2014-09-01 00:00:00', NULL);
 
@@ -1841,12 +1823,18 @@ CREATE TABLE `mri_upload` (
   `UploadID` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `UploadedBy` varchar(255) NOT NULL DEFAULT '',
   `UploadDate` DateTime DEFAULT NULL,
-  `SourceLocation` varchar(255) NOT NULL DEFAULT '',
+  `UploadLocation` varchar(255) NOT NULL DEFAULT '',
+  `DecompressedLocation` varchar(255) NOT NULL DEFAULT '',
+  `Processed` tinyint(1) NOT NULL DEFAULT '0',
+  `CurrentlyProcessed` tinyint(1) NOT NULL DEFAULT '0',
+  `PatientName` varchar(255) NOT NULL DEFAULT '',
   `number_of_mincInserted` int(11) DEFAULT NULL,
   `number_of_mincCreated` int(11) DEFAULT NULL,
   `TarchiveID` int(11) DEFAULT NULL,
   `SessionID` int(10) unsigned DEFAULT NULL,
   `IsValidated` tinyint(1) NOT NULL DEFAULT '0',
+  `IsTarchiveValidated` tinyint(1) NOT NULL DEFAULT '0',
+  `IsPhantom` enum('N','Y') NOT NULL DEFAULT 'N',
   PRIMARY KEY (`UploadID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -1947,9 +1935,7 @@ CREATE TABLE `user_login_history` (
   `Login_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `IP_address` varchar(255) DEFAULT NULL,
   `Page_requested` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`loginhistoryID`),
-  KEY `FK_user_login_history_1` (`userID`),
-  CONSTRAINT `FK_user_login_history_1` FOREIGN KEY (`userID`) REFERENCES `users` (`UserID`)
+  PRIMARY KEY (`loginhistoryID`)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -1986,36 +1972,41 @@ INSERT INTO LorisMenu (Label, OrderNumber) VALUES
      ('Admin', 6);
 
 INSERT INTO LorisMenu (Label, Link, Parent, OrderNumber) VALUES 
-    ('New Profile', 'main.php?test_name=new_profile', 1, 1),
-    ('Access Profile', 'main.php?test_name=candidate_list', 1, 2);
+    ('New Profile', 'main.php?test_name=new_profile', (SELECT ID FROM LorisMenu as L WHERE Label='Candidate'), 1),
+    ('Access Profile', 'main.php?test_name=candidate_list', (SELECT ID FROM LorisMenu as L WHERE Label='Candidate'), 2);
 
 INSERT INTO LorisMenu (Label, Link, Parent, OrderNumber) VALUES 
-    ('Reliability', 'main.php?test_name=reliability', 2, 1),
-    ('Conflicts Resolver', 'main.php?test_name=conflict_resolver', 2, 2),
-    ('Certification', 'main.php?test_name=certification', 2, 3);
+    ('Reliability', 'main.php?test_name=reliability', (SELECT ID FROM LorisMenu as L WHERE Label='Clinical'), 1),
+    ('Conflict Resolver', 'main.php?test_name=conflict_resolver', (SELECT ID FROM LorisMenu as L WHERE Label='Clinical'), 2),
+    ('Examiner', 'main.php?test_name=examiner', (SELECT ID FROM LorisMenu as L WHERE Label='Clinical'), 3),
+    ('Training', 'main.php?test_name=training', (SELECT ID FROM LorisMenu as L WHERE Label='Clinical'), 4);
 
 INSERT INTO LorisMenu (Label, Link, Parent, OrderNumber) VALUES 
-    ('Radiological Reviews', 'main.php?test_name=final_radiological_review', 3, 1),
-    ('DICOM Archive', 'main.php?test_name=dicom_archive', 3, 2),
-    ('Imaging Browser', 'main.php?test_name=imaging_browser', 3, 3),
-    ('MRI Violated Scans', 'main.php?test_name=mri_violations', 3, 4),
-    ('MRI Upload', 'main.php?test_name=mri_upload', 3, 5);
+    ('Radiological Reviews', 'main.php?test_name=final_radiological_review', (SELECT ID FROM LorisMenu as L WHERE Label='Imaging'), 1),
+    ('DICOM Archive', 'main.php?test_name=dicom_archive', (SELECT ID FROM LorisMenu as L WHERE Label='Imaging'), 2),
+    ('Imaging Browser', 'main.php?test_name=imaging_browser', (SELECT ID FROM LorisMenu as L WHERE Label='Imaging'), 3),
+    ('MRI Violated Scans', 'main.php?test_name=mri_violations', (SELECT ID FROM LorisMenu as L WHERE Label='Imaging'), 4),
+    ('Imaging Uploader', 'main.php?test_name=imaging_uploader', (SELECT ID FROM LorisMenu as L WHERE Label='Imaging'), 5);
 
 INSERT INTO LorisMenu (Label, Link, Parent, OrderNumber) VALUES 
-    ('Statistics', 'main.php?test_name=statistics', 4, 1),
-    ('Data Query Tool', '/dqt/', 4, 2);
+    ('Statistics', 'main.php?test_name=statistics', (SELECT ID FROM LorisMenu as L WHERE Label='Reports'), 1),
+    ('Data Query Tool', '/dqt/', (SELECT ID FROM LorisMenu as L WHERE Label='Reports'), 2);
 
 INSERT INTO LorisMenu (Label, Link, Parent, OrderNumber) VALUES
-    ('Data Dictionary', 'main.php?test_name=datadict', 5, 1),
-    ('Document Repository', 'main.php?test_name=document_repository', 5, 2),
-    ('Data Team Helper', 'main.php?test_name=data_team_helper', 5, 3),
-    ('Instrument Builder', 'main.php?test_name=instrument_builder', 5, 4);
+    ('Data Dictionary', 'main.php?test_name=datadict', (SELECT ID FROM LorisMenu as L WHERE Label='Tools'), 1),
+    ('Document Repository', 'main.php?test_name=document_repository', (SELECT ID FROM LorisMenu as L WHERE Label='Tools'), 2),
+    ('Data Integrity Flag', 'main.php?test_name=data_integrity_flag', (SELECT ID FROM LorisMenu as L WHERE Label='Tools'), 3),
+    ('Data Team Helper', 'main.php?test_name=data_team_helper', (SELECT ID FROM LorisMenu as L WHERE Label='Tools'), 4),
+    ('Instrument Builder', 'main.php?test_name=instrument_builder', (SELECT ID FROM LorisMenu as L WHERE Label='Tools'), 5),
+    ('Genomic Browser', 'main.php?test_name=genomic_browser', (SELECT ID FROM LorisMenu as L WHERE Label='Tools'), 6);
 
 INSERT INTO LorisMenu (Label, Link, Parent, OrderNumber) VALUES 
-    ('User Accounts', 'main.php?test_name=user_accounts', 6, 1),
-    ('Survey Module', 'main.php?test_name=survey_accounts', 6,2),
-    ('Help Editor', 'main.php?test_name=help_editor', 6,3),
-    ('Configuration', 'main.php?test_name=configuration', 6, 4);
+    ('User Accounts', 'main.php?test_name=user_accounts', (SELECT ID FROM LorisMenu as L WHERE Label='Admin'), 1),
+    ('Survey Module', 'main.php?test_name=survey_accounts', (SELECT ID FROM LorisMenu as L WHERE Label='Admin'), 2),
+    ('Help Editor', 'main.php?test_name=help_editor', (SELECT ID FROM LorisMenu as L WHERE Label='Admin'), 3),
+    ('Instrument Manager', 'main.php?test_name=instrument_manager', (SELECT ID FROM LorisMenu as L WHERE Label='Admin'), 4),
+    ('Configuration', 'main.php?test_name=configuration', (SELECT ID FROM LorisMenu as L WHERE Label='Admin'), 5),
+    ('Server Processes Manager', 'main.php?test_name=server_processes_manager', (SELECT ID FROM LorisMenu as L WHERE Label='Admin'), 6);
 
 CREATE TABLE LorisMenuPermissions (
     MenuID integer unsigned REFERENCES LorisMenu(ID),
@@ -2024,67 +2015,106 @@ CREATE TABLE LorisMenuPermissions (
 
 -- New Profile permission
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 7, PermID FROM permissions WHERE code='data_entry';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='data_entry' AND m.Label='New Profile';
 
 -- Access Profile 
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 8, PermID FROM permissions WHERE code='data_entry';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='data_entry' AND m.Label='Access Profile';
 
 -- Reliability
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 9, PermID FROM permissions WHERE code='user_accounts';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='user_accounts' AND m.Label='Reliability';
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 9, PermID FROM permissions WHERE code='reliability_edit_all';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='reliability_edit_all' AND m.Label='Reliability';
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 9, PermID FROM permissions WHERE code='access_all_profiles';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='access_all_profiles' AND m.Label='Reliability';
 
--- Conflicts Resolver
+-- Conflict Resolver
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 10, PermID FROM permissions WHERE code='data_entry';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='data_entry' AND m.Label='Conflict Resolver';
 
--- Certification
+-- Examiner
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 11, PermID FROM permissions WHERE code='certification';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='examiner_site' AND m.Label='Examiner';
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 11, PermID FROM permissions WHERE code='certification_multisite';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='examiner_multisite' AND m.Label='Examiner';
+
+-- Training
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='training' AND m.Label='Training';
 
 -- Radiological Reviews
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 12, PermID FROM permissions WHERE code='edit_final_radiological_review';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='edit_final_radiological_review' AND m.Label='Radiological Reviews';
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 12, PermID FROM permissions WHERE code='view_final_radiological_review';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='view_final_radiological_review' AND m.Label='Radiological Reviews';
 
 -- DICOM Archive -- Config file currently does not require any permission
 -- Imaging Browser -- Config file currently does not require any permission
--- Statistics -- Config file currently does not require any permission 
 
--- Document Repository 
-INSERT INTO LorisMenuPermissions (MenuID, PermID)
-    SELECT 16, PermID FROM permissions WHERE code='file_upload';
-
--- Data Query Tool
+-- MRI Violated Scans
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 18, PermID FROM permissions WHERE code='data_dict';
-
--- Data Dictionary
-INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 19, PermID FROM permissions WHERE code='data_dict';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='violated_scans_view_allsites' AND m.Label='MRI Violated Scans';
 
 -- MRI Upload
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 20, PermID FROM permissions WHERE code='mri_upload';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='mri_upload' AND m.Label='MRI Upload';
 
--- Data Team Helper -- Config file currently does not require any permission
--- Instrument Builder -- Config file currently does not require any permission
+-- Statistics -- Config file currently does not require any permission 
+
+-- Data Query Tool
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='data_dict_view' AND m.Label='Data Query Tool';
+
+-- Data Dictionary
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='data_dict_view' AND m.Label='Data Dictionary';
+
+-- Document Repository
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='file_upload' AND m.Label='Document Repository';
+
+-- Data Integrity Flag
+INSERT INTO LorisMenuPermissions (MenuID, PermID) SELECT m.ID, p.PermID 
+    FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='data_integrity_flag' AND m.Label='Data Integrity Flag';
+
+-- Data Team Helper
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='data_team_helper' AND m.Label='Data Team Helper';
+
+-- Instrument Builder 
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='instrument_builder' AND m.Label='Instrument Builder';
+
+-- Genomic Browser 
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='genomic_browser_view_site' AND m.Label='Genomic Browser';
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='genomic_browser_view_allsites' AND m.Label='Genomic Browser';
 
 -- User Accounts
 INSERT INTO LorisMenuPermissions (MenuID, PermID) 
-    SELECT 23, PermID FROM permissions WHERE code='user_accounts';
-INSERT INTO LorisMenuPermissions (MenuID, PermID) SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='user_accounts' AND m.Label='Survey Module';
-INSERT INTO LorisMenuPermissions (MenuID, PermID) SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='violated_scans' AND m.Label='MRI Violated Scans';
-INSERT INTO LorisMenuPermissions (MenuID, PermID) SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='context_help' AND m.Label='Help Editor';
-INSERT INTO LorisMenuPermissions (MenuID, PermID) SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='config' AND m.Label='Configuration';
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='user_accounts' AND m.Label='User Accounts';
 
+-- Survey Module
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='user_accounts' AND m.Label='Survey Module';
+
+-- Help Editor
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='context_help' AND m.Label='Help Editor';
+
+-- Instrument Manager
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='superuser' AND m.Label='Instrument Manager';
+
+-- Configuration
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='config' AND m.Label='Configuration';
+
+-- Server Processes Manager
+INSERT INTO LorisMenuPermissions (MenuID, PermID) 
+    SELECT m.ID, p.PermID FROM permissions p CROSS JOIN LorisMenu m WHERE p.code='server_processes_manager' AND m.Label='Server Processes Manager';
 
 CREATE TABLE `ConfigSettings` (
     `ID` int(11) NOT NULL AUTO_INCREMENT,
@@ -2092,8 +2122,10 @@ CREATE TABLE `ConfigSettings` (
     `Description` varchar(255) DEFAULT NULL,
     `Visible` tinyint(1) DEFAULT '0',
     `AllowMultiple` tinyint(1) DEFAULT '0',
-    `DataType` enum('text') DEFAULT NULL,
+    `DataType` ENUM('text', 'boolean', 'email', 'instrument', 'textarea') DEFAULT NULL,
     `Parent` int(11) DEFAULT NULL,
+    `Label` varchar(255) DEFAULT NULL,
+    `OrderNumber` int(11) DEFAULT NULL,
     PRIMARY KEY (`ID`),
     UNIQUE KEY `Name` (`Name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -2105,341 +2137,328 @@ CREATE TABLE `Config` (
     PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-
+--
 -- Filling ConfigSettings table
-
---
--- study
 --
 
 -- study
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('study', 'Study variables', 1, 0);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('study', 'Settings related to details of the study', 1, 0, 'Study', 1);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'additional_user_info', 'Display additional user profile fields on the User accounts page (e.g. Institution, Position, Country, Address)', 1, 0, 'boolean', ID, 'Additional user information', 14 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'title', 'Full descriptive title of the study', 1, 0, 'text', ID, 'Study title', 1 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'studylogo', 'Filename containing logo of the study. File should be located under the htdocs/images/ folder', 1, 0, 'text', ID, 'Study logo', 2 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'useEDC', 'Use EDC (Expected Date of Confinement) for birthdate estimations if the study involves neonatals', 1, 0, 'boolean', ID, 'Use EDC', 12 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'ageMin', 'Minimum candidate age in years (0+)', 1, 0, 'text', ID, 'Minimum candidate age', 7 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'ageMax', 'Maximum candidate age in years', 1, 0, 'text', ID, 'Maximum candidate age', 8 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'multipleSites', 'Enable if there is there more than one site in the project', 1, 0, 'boolean', ID, 'Multiples sites', 3 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'useFamilyID', 'Enable if family members are recruited for the study', 1, 0, 'boolean', ID, 'Use family', 10 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'startYear', "Start year for study recruitment or data collection", 1, 0, 'text', ID, 'Start year', 5 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'endYear', "End year for study recruitment or data collection", 1, 0, 'text', ID, 'End year', 6 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'useExternalID', "Enable if data is used for blind data distribution, or from external data sources", 1, 0, 'boolean', ID, 'Use external ID', 11 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'useProband', "Enable for proband data collection", 1, 0, 'boolean', ID, 'Use proband', 9 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'useProjects', "Enable if the study involves more than one project, where each project has multiple cohorts/subprojects", 1, 0, 'boolean', ID, 'Use projects', 4 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'useScreening', "Enable if there is a Screening stage with its own distinct instruments, administered before the Visit stage", 1, 0, 'boolean', ID, 'Use screening', 13 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'excluded_instruments', "Instruments to be excluded from the Data Dictionary and download via the Data Query Tool", 1, 1, 'instrument', ID, 'Excluded instruments', 15 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'DoubleDataEntryInstruments', "Instruments for which double data entry should be enabled", 1, 1, 'instrument', ID, 'Double data entry instruments', 16 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'InstrumentResetting', 'Allows resetting of instrument data', 1, 0, 'boolean', ID, 'Instrument Resetting', 17 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'SupplementalSessionStatus', 'Display supplemental session status information on Timepoint List page', 1, 0, 'boolean', ID, 'Use Supplemental Session Status', 18 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'useScanDone', 'Determines whether or not "Scan Done" should be used in Loris', 1, 0, 'boolean', ID, 'Use Scan Done', 19 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'allowPrenatalTimepoints', 'Determines whether creation of timepoints prior to Date of Birth is allowed', 1, 0, 'boolean', ID, 'Allow Prenatal Timepoints', 20 FROM ConfigSettings WHERE Name="study";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'ImagingUploaderAutoLaunch', "Allows running the ImagingUpload pre-processing scripts", 1, 0, 'boolean', ID, 'ImagingUploader Auto Launch',21 FROM ConfigSettings WHERE Name="study";
 
--- additional_user_info
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'additional_user_info', 'Display additional user fields in User Accounts page', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- title
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'title', 'Descriptive study title', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- studylogo
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'studylogo', 'Logo of the study', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- columnThreshold
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'columnThreshold', 'Number of columns the quat table will contain', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- useEDC
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'useEDC', 'Use EDC (Expected Date of Confinement) - false unless the study focuses on neonatals for birthdate estimations.', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- ageMin
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'ageMin', 'Minimum candidate age in years (0+)', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- ageMax
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'ageMax', 'Maximum candidate age in years', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- multipleSites
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'multipleSites', 'More than one site in the project', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- useFamilyID
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'useFamilyID', 'Use family ID', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- startYear
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'startYear', "Project's start year", 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- endYear
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'endYear', "Project's end year", 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- useExternalID
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'useExternalID', "Use external ID field - false unless data is used for blind data distribution, or from external data sources", 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- useProband
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'useProband', "Show proband section on the candidate parameter page", 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- useProjects
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'useProjects', "Whether or not study involves more than one project where each project has multiple cohorts/subprojects", 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- useScreening
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'useScreening', "Whether or not there is a screening stage with its own intruments done before the visit stage", 1, 0, 'text', ID FROM ConfigSettings WHERE Name="study";
-
--- excluded_instruments
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Parent) SELECT 'excluded_instruments', "Instruments to be excluded from the data dictionary and the data query tool", 1, 0, ID FROM ConfigSettings WHERE Name="study";
-
--- instrument
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'instrument', "Instrument to be excluded from the data dictionary and the data query tool", 1, 1, 'text', ID FROM ConfigSettings WHERE Name="excluded_instruments";
-
--- DoubleDataEntryInstruments
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'DoubleDataEntryInstruments', "Instruments for which double data entry should be enabled", 1, 1, 'text', ID FROM ConfigSettings WHERE Name="study";
-
---
--- paths
---
 
 -- paths
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('paths', 'Path settings', 1, 0);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('paths', 'Specify directories where LORIS-related files are stored or created. Take care when editing these fields as changing them incorrectly can cause certain modules to lose functionality.', 1, 0, 'Paths', 2);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'imagePath', 'Path to images for display in Imaging Browser (e.g. /data/$project/data/) ', 1, 0, 'text', ID, 'Images', 9 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'base', 'The base filesystem path where LORIS is installed', 1, 0, 'text', ID, 'Base', 1 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'data', 'Path to main imaging data directory (e.g. /data/$project/data/) ', 1, 0, 'text', ID, 'Imaging data', 5 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'extLibs', 'Path to external libraries', 1, 0, 'text', ID, 'External libraries', 3 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'mincPath', 'Path to MINC files (e.g. /data/$project/data/)', 1, 0, 'text', ID, 'MINC files', 8 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'DownloadPath', 'Where files are downloaded', 1, 0, 'text', ID, 'Downloads', 4 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'log', 'Path to logs (relative path starting from /var/www/$projectname)', 1, 0, 'text', ID, 'Logs', 2 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'IncomingPath', 'Path for imaging data transferred to the project server (e.g. /data/incoming/$project/)', 1, 0, 'text', ID, 'Incoming data', 7 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'MRICodePath', 'Path to directory where Loris-MRI (git) code is installed', 1, 0, 'text', ID, 'LORIS-MRI code', 6 FROM ConfigSettings WHERE Name="paths";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'MRIUploadIncomingPath', '"Path to the Directory of Uploaded Scans', 1, 0, 'text', ID, 'MRI-Upload Directory', 7 FROM ConfigSettings WHERE Name="paths"; 
 
--- imagePath
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'imagePath', 'Path to images', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
 
--- base
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'base', 'Base path', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
--- data
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'data', 'Path to data', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
--- extLibs
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'extLibs', 'Path to external libraries', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
--- mincPath
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'mincPath', 'Path to MINC files', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
--- DownloadPath
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'DownloadPath', 'Where files are downloaded', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
--- log
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'log', 'Path to logs', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
--- IncomingPath
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'IncomingPath', 'Path for data transferred to the project server', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
--- MRICodePath
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'MRICodePath', 'Path to MRI code', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="paths";
-
---
--- gui
---
 
 -- gui
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('gui', 'GUI settings', 1, 0);
-
--- css
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'css', 'CSS file used for rendering', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="gui";
-
--- rowsPerPage
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'rowsPerPage', 'Number of table rows to appear, per page', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="gui";
-
--- showTiming
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'showTiming', 'Show breakdown of timing information for page loading', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="gui";
-
--- showPearErrors
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'showPearErrors', 'Print PEAR errors', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="gui";
-
---
--- www
---
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('gui', 'Settings related to the overall display of LORIS', 1, 0, 'GUI', 3);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'css', 'CSS file used for rendering (default main.css)', 1, 0, 'text', ID, 'CSS file', 1 FROM ConfigSettings WHERE Name="gui";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'rowsPerPage', 'Number of table rows to display per page', 1, 0, 'text', ID, 'Table rows per page', 2 FROM ConfigSettings WHERE Name="gui";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'showTiming', 'Show breakdown of timing information for page loading', 1, 0, 'boolean', ID, 'Show page load timing', 3 FROM ConfigSettings WHERE Name="gui";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'showPearErrors', 'Print PEAR errors', 1, 0, 'boolean', ID, 'Show PEAR errors', 4 FROM ConfigSettings WHERE Name="gui";
 
 -- www
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('www', 'WWW settings', 1, 0);
-
--- host
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'host', 'Host', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="www";
-
--- url
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'url', 'Main project URL', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="www";
-
--- mantis_url
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'mantis_url', 'Bug tracker URL', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="www";
-
---
--- dashboard
---
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('www', 'Web address settings', 1, 0, 'WWW', 4);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'host', 'Host', 1, 0, 'text', ID, 'Host', 1 FROM ConfigSettings WHERE Name="www";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'url', 'Main URL where LORIS can be accessed', 1, 0, 'text', ID, 'Main LORIS URL', 2 FROM ConfigSettings WHERE Name="www";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'mantis_url', 'Bug tracker URL', 1, 0, 'text', ID, 'Bug tracker URL', 3 FROM ConfigSettings WHERE Name="www";
 
 -- dashboard
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('dashboard', 'Dashboard settings', 1, 0);
-
--- projectDescription
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'projectDescription', 'Description of the project that will be displayed in the top panel of the dashboard', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="dashboard";
-
--- recruitmentTarget
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'recruitmentTarget', 'Target number of participants for the study', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="dashboard";
-
---
--- dicom_archive
---
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('dashboard', 'Settings that affect the appearance of the dashboard and its charts', 1, 0, 'Dashboard', 5);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'projectDescription', 'Description of the study displayed in main dashboard panel', 1, 0, 'textarea', ID, 'Project Description', 1 FROM ConfigSettings WHERE Name="dashboard";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'recruitmentTarget', 'Target number of participants for the study', 1, 0, 'text', ID, 'Target number of participants', 2 FROM ConfigSettings WHERE Name="dashboard";
 
 -- dicom_archive
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('dicom_archive', 'DICOM archive settings', 1, 0);
-
--- patientIDRegex
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'patientIDRegex', 'Regex for the patient ID', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="dicom_archive";
-
--- patientNameRegex
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'patientNameRegex', 'Regex for the patient name', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="dicom_archive";
-
--- LegoPhantomRegex
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'LegoPhantomRegex', 'Regex to be used on a Lego Phantom scan', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="dicom_archive";
-
--- LivingPhantomRegex
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'LivingPhantomRegex', 'Regex to be used on Living Phantom scan', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="dicom_archive";
-
--- showTransferStatus
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'showTransferStatus', 'Show transfer status in the DICOM archive table', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="dicom_archive";
-
---
--- statistics
---
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('dicom_archive', 'DICOM Archive settings', 1, 0, 'DICOM Archive', 6);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'patientIDRegex', 'Regex for masking the Patient ID header field', 1, 0, 'text', ID, 'Patient ID regex', 1 FROM ConfigSettings WHERE Name="dicom_archive";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'patientNameRegex', 'Regex for masking the Patient Name header field', 1, 0, 'text', ID, 'Patient name regex', 2 FROM ConfigSettings WHERE Name="dicom_archive";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'LegoPhantomRegex', 'Regex for identifying a Lego Phantom scan header', 1, 0, 'text', ID, 'Lego phantom regex', 3 FROM ConfigSettings WHERE Name="dicom_archive";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'LivingPhantomRegex', 'Regex to be used on Living Phantom scan header', 1, 0, 'text', ID, 'Living phantom regex', 4 FROM ConfigSettings WHERE Name="dicom_archive";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'showTransferStatus', 'Show transfer status in the DICOM Archive table', 1, 0, 'boolean', ID, 'Show transfer status', 5 FROM ConfigSettings WHERE Name="dicom_archive";
 
 -- statistics
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('statistics', 'Statistics settings', 1, 0);
-
--- excludedMeasures
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'excludedMeasures', 'Excluded measures', 1, 1, 'text', ID FROM ConfigSettings WHERE Name="statistics";
-
---
--- mail
---
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('statistics', 'Statistics module settings', 1, 0, 'Statistics', 7);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'excludedMeasures', 'Instruments to be excluded from Statistics calculations', 1, 1, 'instrument', ID, 'Excluded instruments', 1 FROM ConfigSettings WHERE Name="statistics";
 
 -- mail
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple) VALUES ('mail', 'Mail settings', 1, 0);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('mail', 'LORIS email settings for notifications sent to users', 1, 0, 'Email', 8);
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'From', 'Sender email address header (e.g. admin@myproject.loris.ca)', 1, 0, 'email', ID, 'From', 1 FROM ConfigSettings WHERE Name="mail";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'Reply-to', 'Reply-to email address header (e.g. admin@myproject.loris.ca)', 1, 0, 'email', ID, 'Reply-to', 2 FROM ConfigSettings WHERE Name="mail";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'X-MimeOLE', 'X-MimeOLE', 1, 0, 'text', ID, 'X-MimeOLE', 3 FROM ConfigSettings WHERE Name="mail";
 
--- headers
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Parent) SELECT 'headers', 'Headers', 1, 0, ID FROM ConfigSettings WHERE Name="mail";
+-- uploads 
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, Label, OrderNumber) VALUES ('uploads', 'Settings related to file uploading', 1, 0, 'Uploads', '9'); 
 
--- From
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'From', 'From', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="headers";
+INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent, Label, OrderNumber) SELECT 'FileGroup', 'Determines the group permission for new subdirectories created for uploaded files', 1, 0, 'text', ID, 'File Group for Uploads', 1 FROM ConfigSettings WHERE Name="uploads";
 
--- Reply-to
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'Reply-to', 'Reply-to', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="headers";
-
--- X-MimeOLE
-INSERT INTO ConfigSettings (Name, Description, Visible, AllowMultiple, DataType, Parent) SELECT 'X-MimeOLE', 'X-MimeOLE', 1, 0, 'text', ID FROM ConfigSettings WHERE Name="headers";
-
+--
 -- Filling Config table with default values
-
+--
 
 -- default study variables
-
--- additional_user_info
 INSERT INTO Config (ConfigID, Value) SELECT ID, 1 FROM ConfigSettings WHERE Name="additional_user_info";
-
--- title
 INSERT INTO Config (ConfigID, Value) SELECT ID, "Example Study" FROM ConfigSettings WHERE Name="title";
-
--- studylogo
 INSERT INTO Config (ConfigID, Value) SELECT ID, "images/neuro_logo_blue.gif" FROM ConfigSettings WHERE Name="studylogo";
-
--- columnThreshold
-INSERT INTO Config (ConfigID, Value) SELECT ID, 250 FROM ConfigSettings WHERE Name="columnThreshold";
-
--- useEDC
 INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="useEDC";
-
--- ageMin
 INSERT INTO Config (ConfigID, Value) SELECT ID, 8 FROM ConfigSettings WHERE Name="ageMin";
-
--- ageMax
 INSERT INTO Config (ConfigID, Value) SELECT ID, 11 FROM ConfigSettings WHERE Name="ageMax";
-
--- multipleSites
 INSERT INTO Config (ConfigID, Value) SELECT ID, "true" FROM ConfigSettings WHERE Name="multipleSites";
-
--- useFamilyID
 INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="useFamilyID";
-
--- startYear
 INSERT INTO Config (ConfigID, Value) SELECT ID, 2004 FROM ConfigSettings WHERE Name="startYear";
-
--- endYear
 INSERT INTO Config (ConfigID, Value) SELECT ID, 2014 FROM ConfigSettings WHERE Name="endYear";
-
--- useExternalID
 INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="useExternalID";
-
--- useProband
 INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="useProband";
-
--- useProjects
 INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="useProjects";
-
--- useScreening
 INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="useScreening";
+INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="SupplementalSessionStatus";
+INSERT INTO Config (ConfigID, Value) SELECT ID, "true" FROM ConfigSettings WHERE Name="useScanDone";
+INSERT INTO Config (ConfigID, Value) SELECT ID, "true" FROM ConfigSettings WHERE Name="allowPrenatalTimepoints";
+INSERT INTO Config (ConfigID, Value) SELECT ID, 0 FROM ConfigSettings WHERE Name="ImagingUploaderAutoLaunch";
 
 -- default path settings
-
--- imagePath
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/data/%PROJECTNAME%/data/" FROM ConfigSettings WHERE Name="imagePath";
-
--- base
 INSERT INTO Config (ConfigID, Value) SELECT ID, "%LORISROOT%" FROM ConfigSettings WHERE Name="base";
-
--- data
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/data/%PROJECTNAME%/data/" FROM ConfigSettings WHERE Name="data";
-
--- extLibs
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/PATH/TO/EXTERNAL/LIBRARY/" FROM ConfigSettings WHERE Name="extLibs";
-
--- mincPath
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/data/%PROJECTNAME%/data/" FROM ConfigSettings WHERE Name="mincPath";
-
--- DownloadPath
 INSERT INTO Config (ConfigID, Value) SELECT ID, "%LORISROOT%" FROM ConfigSettings WHERE Name="DownloadPath";
-
--- log
 INSERT INTO Config (ConfigID, Value) SELECT ID, "tools/logs/" FROM ConfigSettings WHERE Name="log";
-
--- IncomingPath
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/data/incoming/" FROM ConfigSettings WHERE Name="IncomingPath";
-
--- MRICodePath
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/data/%PROJECTNAME%/bin/mri/" FROM ConfigSettings WHERE Name="MRICodePath";
+INSERT INTO Config (ConfigID, Value) SELECT ID, "/PATH/TO/MRI-Upload/" FROM ConfigSettings WHERE Name="MRIUploadIncomingPath";
 
 -- default gui settings
-
--- css
 INSERT INTO Config (ConfigID, Value) SELECT ID, "main.css" FROM ConfigSettings WHERE Name="css";
-
--- rowsPerPage
 INSERT INTO Config (ConfigID, Value) SELECT ID, 25 FROM ConfigSettings WHERE Name="rowsPerPage";
-
--- showTiming
 INSERT INTO Config (ConfigID, Value) SELECT ID, 0 FROM ConfigSettings WHERE Name="showTiming";
-
--- showPearErrors
 INSERT INTO Config (ConfigID, Value) SELECT ID, 0 FROM ConfigSettings WHERE Name="showPearErrors";
 
 -- default www settings
-
--- host
 INSERT INTO Config (ConfigID, Value) SELECT ID, "localhost" FROM ConfigSettings WHERE Name="host";
-
--- url
-INSERT INTO Config (ConfigID, Value) SELECT ID, "https://localhost/" FROM ConfigSettings WHERE Name="url";
+INSERT INTO Config (ConfigID, Value) SELECT ID, "http://localhost/" FROM ConfigSettings WHERE Name="url";
 
 -- default dashboard settings
-
--- projectDescription
 INSERT INTO Config (ConfigID, Value) SELECT ID, "This database provides an on-line mechanism to store both imaging and behavioral data collected from various locations. Within this framework, there are several tools that will make this process as efficient and simple as possible. For more detailed information regarding any aspect of the database, please click on the Help icon at the top right. Otherwise, feel free to contact us at the DCC. We strive to make data collection almost fun." FROM ConfigSettings WHERE Name="projectDescription";
 
 -- default dicom_archive settings
-
--- patientIDRegex
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/./" FROM ConfigSettings WHERE Name="patientIDRegex";
-
--- patientNameRegex
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/./i" FROM ConfigSettings WHERE Name="patientNameRegex";
-
--- LegoPhantomRegex
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/./i" FROM ConfigSettings WHERE Name="LegoPhantomRegex";
-
--- LivingPhantomRegex
 INSERT INTO Config (ConfigID, Value) SELECT ID, "/./i" FROM ConfigSettings WHERE Name="LivingPhantomRegex";
-
--- showTransferStatus
 INSERT INTO Config (ConfigID, Value) SELECT ID, "false" FROM ConfigSettings WHERE Name="showTransferStatus";
 
 -- default statistics settings
-
--- excludedMeasures
 INSERT INTO Config (ConfigID, Value) SELECT ID, "radiology_review" FROM ConfigSettings WHERE Name="excludedMeasures";
-
--- excludedMeasures
 INSERT INTO Config (ConfigID, Value) SELECT ID, "mri_parameter_form" FROM ConfigSettings WHERE Name="excludedMeasures";
 
 -- default mail settings
-
--- From
 INSERT INTO Config (ConfigID, Value) SELECT ID, "no-reply@example.com" FROM ConfigSettings WHERE Name="From";
-
--- Reply-to
 INSERT INTO Config (ConfigID, Value) SELECT ID, "no-reply@example.com" FROM ConfigSettings WHERE Name="Reply-to";
-
--- X-MimeOLE
 INSERT INTO Config (ConfigID, Value) SELECT ID, "Produced by LorisDB" FROM ConfigSettings WHERE Name="X-MimeOLE";
+
+CREATE TABLE subproject (
+    SubprojectID int(10) unsigned NOT NULL auto_increment,
+    title varchar(255) NOT NULL,
+    useEDC boolean,
+    WindowDifference enum('optimal', 'battery'),
+    RecruitmentTarget int(10) unsigned,
+    PRIMARY KEY (SubprojectID)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='Stores Subprojects used in Loris';
+INSERT INTO subproject (SubprojectID, title, useEDC, WindowDifference) VALUES (1, 'Control', false, 'optimal');
+INSERT INTO subproject (SubprojectID, title, useEDC, WindowDifference) VALUES (2, 'Experimental', false, 'optimal');
+
+CREATE TABLE StatisticsTabs(
+    ID INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    ModuleName varchar(255) NOT NULL,
+    SubModuleName varchar(255) NOT NULL,
+    Description varchar(255),
+    OrderNo INTEGER DEFAULT NULL,
+    PRIMARY KEY (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Stores list of tabs for the statistics module';
+
+INSERT INTO StatisticsTabs (ModuleName, SubModuleName, Description, OrderNo) VALUES
+    ('statistics', 'stats_general', 'General Description', 1),
+    ('statistics', 'stats_demographic', 'Demographic Statistics', 2),
+    ('statistics', 'stats_behavioural', 'Behavioural Statistics', 3),
+    ('statistics', 'stats_reliability', 'Reliability Statistics', 4),
+    ('statistics', 'stats_MRI', 'Imaging Statistics', 5);
+
+CREATE TABLE `final_radiological_review_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `col` varchar(255) NOT NULL DEFAULT '',
+  `old` text,
+  `new` text,
+  `CommentID` varchar(255),
+  `changeDate` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `userID` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Genomic Browser tables : no data included
+--
+-- Table structure for table `gene`
+DROP TABLE IF EXISTS `gene`;
+CREATE TABLE `gene` (
+  `GeneID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `Symbol` varchar(255) DEFAULT NULL,
+  `Name` varchar(255) DEFAULT NULL,
+  `NCBIID` varchar(255) DEFAULT NULL,
+  `OfficialSymbol` varchar(255) DEFAULT NULL,
+  `OfficialName` text,
+  `GenomeLocID` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`GeneID`),
+  KEY `geneGenomeLocID` (`GenomeLocID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Table structure for table `genome_loc`
+DROP TABLE IF EXISTS `genome_loc`;
+CREATE TABLE `genome_loc` (
+  `GenomeLocID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `Chromosome` varchar(255) DEFAULT NULL,
+  `Strand` varchar(255) DEFAULT NULL,
+  `EndLoc` int(11) DEFAULT NULL,
+  `Size` int(11) DEFAULT NULL,
+  `StartLoc` int(11) DEFAULT NULL,
+  PRIMARY KEY (`GenomeLocID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Table structure for table `genotyping_platform`
+DROP TABLE IF EXISTS `genotyping_platform`;
+CREATE TABLE `genotyping_platform` (
+  `PlatformID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `Name` varchar(255) DEFAULT NULL,
+  `Description` text,
+  `TechnologyType` varchar(255) DEFAULT NULL,
+  `Provider` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`PlatformID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Table structure for table `SNP`
+DROP TABLE IF EXISTS `SNP`;
+CREATE TABLE `SNP` (
+  `SNPID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `CandID` int(6) DEFAULT NULL,
+  `rsID` varchar(9) DEFAULT NULL,
+  `Description` text,
+  `SNPExternalName` varchar(255) DEFAULT NULL,
+  `SNPExternalSource` varchar(255) DEFAULT NULL,
+  `ObservedBase` enum('A','C','T','G') DEFAULT NULL,
+  `ReferenceBase` enum('A','C','T','G') DEFAULT NULL,
+  `ArrayReport` enum('Normal','Pending','Uncertain') DEFAULT NULL,
+  `Markers` varchar(255) DEFAULT NULL,
+  `ArrayReportDetail` varchar(255) DEFAULT NULL,
+  `ValidationMethod` varchar(50) DEFAULT NULL,
+  `Validated` enum('0','1') DEFAULT NULL,
+  `FunctionPrediction` enum('exonic','ncRNAexonic','splicing','UTR3','UTR5') DEFAULT NULL,
+  `Damaging` enum('D','NA') DEFAULT NULL,
+  `GenotypeQuality` int(4) DEFAULT NULL,
+  `PlatformID` bigint(20) DEFAULT NULL,
+  `GenomeLocID` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`SNPID`),
+  FOREIGN KEY (`PlatformID`) REFERENCES genotyping_platform(`PlatformID`),
+  FOREIGN KEY (`GenomeLocID`) REFERENCES genome_loc(`GenomeLocID`),
+  FOREIGN KEY (`CandID`) REFERENCES candidate(`CandID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+-- Table structure for table `CNV`
+CREATE TABLE `CNV` (
+  `CNVID` bigint(20) NOT NULL AUTO_INCREMENT,
+  `CandID` int(6) DEFAULT NULL,
+  `Description` text,
+  `Type` enum('gain','loss','unknown') DEFAULT NULL,
+  `EventName` varchar(255) DEFAULT NULL,
+  `Common_CNV` enum('Y','N') DEFAULT NULL,
+  `Characteristics` enum('Benign','Pathogenic','Unknown') DEFAULT NULL,
+  `CopyNumChange` int(11) DEFAULT NULL,
+  `Inheritance` enum('de novo','NA','unclassified','unknown','maternal','paternal') DEFAULT NULL,
+  `ArrayReport` enum('Normal','Abnormal','Pending','Uncertain') DEFAULT NULL,
+  `Markers` varchar(255) DEFAULT NULL,
+  `ArrayReportDetail` varchar(255) DEFAULT NULL,
+  `ValidationMethod` varchar(50) DEFAULT NULL,
+  `PlatformID` bigint(20) DEFAULT NULL,
+  `GenomeLocID` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`CNVID`),
+  FOREIGN KEY (`PlatformID`) REFERENCES genotyping_platform(`PlatformID`),
+  FOREIGN KEY (`GenomeLocID`) REFERENCES genome_loc(`GenomeLocID`),
+  FOREIGN KEY (`CandID`) REFERENCES candidate(`CandID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `certification_training` (
+    `ID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `TestID` int(10) UNSIGNED NOT NULL,
+    `Title` varchar(255) NOT NULL,
+    `Content` text,
+    `TrainingType` enum('text', 'pdf', 'video', 'quiz') NOT NULL,
+    `OrderNumber` INTEGER UNSIGNED NOT NULL,
+    PRIMARY KEY (`ID`),
+    CONSTRAINT `FK_certification_training` FOREIGN KEY (`TestID`) REFERENCES `test_names` (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `certification_training_quiz_questions` (
+    `ID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `TestID` int(10) unsigned NOT NULL,
+    `Question` varchar(255) NOT NULL,
+    `OrderNumber` INTEGER UNSIGNED NOT NULL,
+    PRIMARY KEY (`ID`),
+    CONSTRAINT `FK_certification_training_quiz_questions` FOREIGN KEY (`TestID`) REFERENCES `test_names` (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `certification_training_quiz_answers` (
+    `ID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+    `QuestionID` INTEGER UNSIGNED NOT NULL,
+    `Answer` varchar(255) NOT NULL,
+    `Correct` boolean NOT NULL,
+    `OrderNumber` INTEGER UNSIGNED NOT NULL,
+    PRIMARY KEY (`ID`),
+    CONSTRAINT `FK_certification_training_quiz_answers` FOREIGN KEY (`QuestionID`) REFERENCES `certification_training_quiz_questions` (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+-- Table structure for table `server_processes`
+DROP TABLE IF EXISTS `server_processes`;
+CREATE TABLE `server_processes` (
+  `id`                int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `pid`               int(11) unsigned NOT NULL,
+  `type`              enum('mri_upload') NOT NULL,
+  `stdout_file`       varchar(255) DEFAULT NULL,
+  `stderr_file`       varchar(255) DEFAULT NULL,
+  `exit_code_file`    varchar(255) DEFAULT NULL,
+  `exit_code`         varchar(255) DEFAULT NULL,
+  `userid`            varchar(255) NOT NULL,
+  `start_time`        timestamp NULL,
+  `end_time`          timestamp NULL,
+  `exit_text`         text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_task_1` (`userid`),
+  CONSTRAINT `FK_task_1` FOREIGN KEY (`userid`) REFERENCES `users` (`UserID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+

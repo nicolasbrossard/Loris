@@ -7,9 +7,9 @@
  *
  * @category Main
  * @package  Loris
- * @author   Various <example@example.com>
- * @license  GPLv3
- * @link     https://www.github.com/aces/Loris-Trunk/
+ * @author   Loris Team <loris.mni@bic.mni.mcgill.ca>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
+ * @link     https://www.github.com/aces/Loris/
  */
 require_once 'PEAR.php';
 require_once "NDB_Config.class.inc";
@@ -23,9 +23,9 @@ require_once 'NDB_Factory.class.inc';
  *
  * @category Main
  * @package  Loris
- * @author   Various <example@example.com>
- * @license  GPLv3
- * @link     https://www.github.com/aces/Loris-Trunk/
+ * @author   Loris Team <loris.mni@bic.mni.mcgill.ca>
+ * @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
+ * @link     https://www.github.com/aces/Loris/
  */
 class Utility extends PEAR
 {
@@ -58,32 +58,6 @@ class Utility extends PEAR
 
         return $data->getCode() == $code;
     }
-
-    /**
-     * Builds a query string
-     *
-     * @param array $params Array of parameters to put into query string format
-     *
-     * @return string
-     */
-    static function unparse_str ($params)
-    {
-        $str = '';
-        foreach ($params as $key => $value) {
-            if (is_array($value)) {
-                foreach ($value AS $vkey => $vval) {
-                    $str .= (strlen($str) < 1) ? '' : '&';
-                    $str .= $key . rawurlencode("[$vkey]") 
-                        . '=' . rawurlencode($vval);
-                }
-            } else {
-                $str .= (strlen($str) < 1) ? '' : '&';
-                $str .= $key . '=' . rawurlencode($value);
-            }
-        }
-        return ($str);
-    }
-
 
     /**
      * Converts a multi-dimensional array to a one-dimensional array
@@ -120,7 +94,7 @@ class Utility extends PEAR
 
 
     /**
-     * computes an age in years:months:days (assumes 30 days per months)
+     * Computes an age in years:months:days (assumes 30 days per months)
      *
      * @param string $dob      date of birth (or first date), formatted YYYY-MM-DD
      * @param string $testdate date of testing (or second date), formatted YYYY-MM-DD
@@ -135,79 +109,53 @@ class Utility extends PEAR
             $dob,
             $matches
         )) {
-            return PEAR::raiseError(
+            throw new Exception(
                 "Argument 1 does not match expected date format (YYYY-MM-DD)"
             );
         }
-        $dob = array('year'=>$matches[1], 'mon'=>$matches[2], 'day'=>$matches[3]);
+        $dob = array(
+                'year' => $matches[1],
+                'mon'  => $matches[2],
+                'day'  => $matches[3],
+               );
 
         if (!preg_match(
             "/([0-9]{4})-?([0-9]{1,2})-?([0-9]{1,2})/",
             $testdate,
             $matches
         )) {
-            return PEAR::raiseError(
+            throw new Exception(
                 "Argument 2 does not match expected date format (YYYY-MM-DD)"
             );
         }
         $testdate = array(
-            'year' => $matches[1],
-            'mon'  => $matches[2],
-            'day'  => $matches[3]
-        );
+                     'year' => $matches[1],
+                     'mon'  => $matches[2],
+                     'day'  => $matches[3],
+                    );
 
         if ($testdate['day'] < $dob['day']) {
-            $testdate['day']+= 30;
+            $testdate['day'] += 30;
             $testdate['mon']--;
         }
         if ($testdate['mon'] < $dob['mon']) {
-            $testdate['mon']+= 12;
+            $testdate['mon'] += 12;
             $testdate['year']--;
         }
 
-        $age = array('year'=>$testdate['year'] - $dob['year'],
-            'mon' =>$testdate['mon'] - $dob['mon'],
-            'day' =>$testdate['day'] - $dob['day']);
+        $age = array(
+                'year' => $testdate['year'] - $dob['year'],
+                'mon'  => $testdate['mon'] - $dob['mon'],
+                'day'  => $testdate['day'] - $dob['day'],
+               );
 
         return $age;
-    }
-
-    /**
-     * Returns a list of available ethnicities that can be assigned to subjects
-     *
-     * @return  array       an associative array("ethnicity" => "ethnicity")
-     * @throws  PEAR_Error
-     * @access  public
-     * @static
-     * @note    This is no longer used and should be removed
-     * @cleanup
-     */
-    function getEthnicityList()
-    {
-        $DB =& Database::singleton();
-
-        // get the list of ethnicities
-        $query = "SELECT DISTINCT Race as Ethnicity FROM ethnic WHERE Race <> ''";
-
-        // execute the query
-        $result = $DB->pselect($query, array());
-        if (Utility::isErrorX($result)) {
-            return PEAR::raiseError("DB Error: ".$result->getMessage());
-        }
-
-        // fix the array
-        $list = array();
-        foreach ($result as $row) {
-            $list[$row["Ethnicity"]] = $row["Ethnicity"];
-        }
-        return $list;
     }
 
     /**
      * Returns a list of existing ethnicities of all candidates
      *
      * @return  array       an associative array("ethnicity" => "ethnicity")
-     * @throws  PEAR_Error
      * @access  public
      * @static
      * @note    This is no longer used and should be removed
@@ -225,9 +173,6 @@ class Utility extends PEAR
         // execute the query
 
         $result = $DB->pselect($query, array());
-        if (Utility::isErrorX($result)) {
-            return PEAR::raiseError("DB Error: ".$result->getMessage());
-        }
 
         // fix the array
         $list = array();
@@ -257,9 +202,6 @@ class Utility extends PEAR
         }
 
         $result = $DB->pselect($query, array());
-        if (Utility::isErrorX($result)) {
-            return PEAR::raiseError("DB Error: ".$result->getMessage());
-        }
 
         // fix the array
         $list = array();
@@ -290,15 +232,12 @@ class Utility extends PEAR
         $query = "SELECT CenterID, Name FROM psc ";
         if ($study_site) {
             $query .= "WHERE Study_site='Y'";
-        }	
+        }
         if (!$DCC) {
             $query .= " AND Name != 'DCC'";
         }
 
         $result = $DB->pselect($query, array());
-        if (Utility::isErrorX($result)) {
-            return PEAR::raiseError("DB Error: ".$result->getMessage());
-        }
 
         // fix the array
         $list = array();
@@ -309,7 +248,7 @@ class Utility extends PEAR
     }
 
     /**
-     * Gets a list of visits used by the database as specified from 
+     * Gets a list of visits used by the database as specified from
      * the Visit_Windows table
      *
      * @return associative array of the form VisitLabel => Visit_label
@@ -321,9 +260,6 @@ class Utility extends PEAR
         $query = "SELECT Visit_label from Visit_Windows ORDER BY Visit_label";
 
         $result = $DB->pselect($query, array());
-        if (Utility::isErrorX($result)) {
-            return PEAR::raiseError("DB Error: ".$result->getMessage());
-        }
 
         $list = array();
         foreach ($result as $row) {
@@ -336,21 +272,20 @@ class Utility extends PEAR
     /**
      * Returns a list of study Subprojects
      *
-     * @throws PEAR_Error
      * @return array       an associative array("SubprojectID" => "Subproject title")
      */
     static function getSubprojectList()
     {
-        $config =& NDB_Config::singleton();
+        $DB     = Database::singleton();
+        $config = NDB_Config::singleton();
 
-        // get the list of Subprojects
-        $subprojectSettings = $config->getSetting('subprojects');
-        foreach (Utility::toArray(
-            $subprojectSettings['subproject']
-        ) as $subproject) {
-            $list[$subproject['id']]=$subproject['title'];
+        $subprojects = $DB->pselect("SELECT * FROM subproject", array());
+
+        $subprojs = array();
+        foreach ($subprojects as $row) {
+            $subprojs[$row['SubprojectID']] = $row['title'];
         }
-        return $list;
+        return $subprojs;
     }
 
     /**
@@ -364,10 +299,10 @@ class Utility extends PEAR
         $config =& NDB_Config::singleton();
 
         // get the list of Subprojects
-        $projectSettings= $config->getSetting('Projects');
+        $projectSettings = $config->getSetting('Projects');
         foreach (Utility::toArray($projectSettings['project']) AS $project) {
 
-            $list[$project['id']]=$project['title'];
+            $list[$project['id']] =$project['title'];
         }
         return $list;
     }
@@ -383,33 +318,30 @@ class Utility extends PEAR
     static function getSubprojectsForProject($projectID = null)
     {
 
-        $db =& Database::singleton();
+        $db     =& Database::singleton();
         $config =& NDB_Config::singleton();
-        $subprojectSettings= $config->getSetting('subprojects');
+        $subprojectSettings = $config->getSetting('subprojects');
         foreach (Utility::toArray(
             $subprojectSettings['subproject']
         ) AS $subproject) {
-            $allSubprojects[$subproject['id']]=$subproject['title'];
+            $allSubprojects[$subproject['id']] =$subproject['title'];
         }
-        if ($projectID != null) { 
-            $query = "SELECT SubprojectID FROM project_rel WHERE ProjectID=:pID";
+        if ($projectID != null) {
+            $query       = "SELECT SubprojectID
+                FROM project_rel
+                WHERE ProjectID=:pID";
             $subprojList = $db->pselect($query, array('pID' => $projectID));
 
-            if (Utility::isErrorX($subprojList)) {
-                return PEAR::raiseError(
-                    "Could not list of subprojects ".$subprojList->getMessage()
-                );
-            }
             foreach ($subprojList as $row) {
                 $subList[] = $row['SubprojectID'];
             }
             $list = array();
             foreach ($subList as $row) {
-                $list[$row] = $allSubprojects[$row];    
+                $list[$row] = $allSubprojects[$row];
             }
             return $list;
         } else {
-            return $allSubprojects;   
+            return $allSubprojects;
 
         }
 
@@ -430,14 +362,8 @@ class Utility extends PEAR
     {
         $db =& Database::singleton();
 
-        $query = "SELECT Test_name FROM flag WHERE CommentID=:CID";
+        $query    = "SELECT Test_name FROM flag WHERE CommentID=:CID";
         $testName = $db->pselectOne($query, array('CID' => $commentID));
-
-        if (Utility::isErrorX($testName)) {
-            return PEAR::raiseError(
-                "Could not get test name: ".$testName->getMessage()
-            );
-        }
 
         return $testName;
     }
@@ -467,12 +393,12 @@ class Utility extends PEAR
      * Perl-compatible regex expression for validation
      *
      * @param array  $structure  the structure root
-     * @param string $siteAbbrev the site abbreviation, sometimes used as part 
-     *                           of the PSCID 
+     * @param string $siteAbbrev the site abbreviation, sometimes used as part
+     *                           of the PSCID
      *
      * @return string the regex pattern
      *
-     * @note    This should probably be moved to the Candidate class, since it's 
+     * @note    This should probably be moved to the Candidate class, since it's
      *       only used there to validate the PSCID
      * @cleanup
      */
@@ -532,7 +458,7 @@ class Utility extends PEAR
                 $length .= $seq['@']['length'];
             } elseif (isset($seq['@']['maxLength'])) {
                 $length .= $seq['@']['maxLength'];
-            } elseif (!isset($seq['@']['length']) 
+            } elseif (!isset($seq['@']['length'])
                 && !isset($seq['@']['minLength'])
             ) {
                 $length .= '1';
@@ -546,20 +472,20 @@ class Utility extends PEAR
     }
 
     /**
-     * merges two arrays recursively, overwriting values of the first
+     * Merges two arrays recursively, overwriting values of the first
      * with the second.  the one "strange" bit is that if there exists
      * a set of 2 or more sibling elements with the same name, then
      * the entire set will be replaced rather than recursively merged.
      *
-     * @param array $array1 The first array to be merged
-     * @param array $array2 The second array to be merged
-     * @param array& &$merged_array A reference to an array to merge
-     *                              the parameters into. If not specified,
-     *                              a new array will be created
+     * @param array $array1       The first array to be merged
+     * @param array $array2       The second array to be merged
+     * @param array $merged_array A reference to an array to merge
+     *                            the parameters into. If not specified,
+     *                            a new array will be created
      *
      * @return An array with the two parameters recursively merged
      */
-    static function array_merge_recursive_overwriting(
+    static function arrayMergeRecursiveOverwriting(
         $array1,
         $array2,
         &$merged_array=null
@@ -569,10 +495,12 @@ class Utility extends PEAR
         }
         foreach ($array2 AS $key=>$value) {
             if (is_array($array1[$key]) && isset($array1[$key][0])) {
-                $merged_array[$key] = $value; 
+                $merged_array[$key] = $value;
             } elseif (is_array($array2[$key]) && !isset($array2[$key][0])) {
-                Utility::array_merge_recursive_overwriting(
-                    $array1[$key], $array2[$key], $merged_array[$key]
+                Utility::arrayMergeRecursiveOverwriting(
+                    $array1[$key],
+                    $array2[$key],
+                    $merged_array[$key]
                 );
             } else {
                 $merged_array[$key] = $value;
@@ -582,8 +510,9 @@ class Utility extends PEAR
     }
 
     /**
-     * returns a list of bvl instruments
-     * returns a list of instruments for a timepoint's stage ($stage). 
+     * Returns a list of bvl instruments
+     *
+     * Returns a list of instruments for a timepoint's stage ($stage).
      * If no stage arg is passed, return the full list for all stages
      *
      * @param integer $age   age in days
@@ -596,7 +525,7 @@ class Utility extends PEAR
         $DB =& Database::singleton();
 
         // craft the select query
-        $query = "SELECT t.Test_name FROM test_battery AS b, test_names AS t 
+        $query  = "SELECT t.Test_name FROM test_battery AS b, test_names AS t 
             WHERE t.Test_name=b.Test_name 
             AND b.AgeMinDays<=:CandAge AND b.AgeMaxDays>=:CandAge 
             AND b.Active='Y'";
@@ -610,16 +539,9 @@ class Utility extends PEAR
         $query .= " GROUP BY Test_name ORDER BY Test_name";
 
         // get the list of instruments
-        $rows = array();
+        $rows  = array();
         $tests = array();
-        $rows = $DB->pselect($query, $params);
-        if (Utility::isErrorX($rows)) {
-            fwrite(
-                STDERR,
-                "Could not lookup battery from database: ".$rows->getMessage()
-            );
-            return false;
-        }
+        $rows  = $DB->pselect($query, $params);
 
         // repackage the array
         foreach ($rows AS $row) {
@@ -631,9 +553,9 @@ class Utility extends PEAR
     }
 
     /**
-     * toArray ensures that $var is a collection of $var elements, not just a 
-     * single element. This is useful for using config->getSetting for an element 
-     * that may be in the config multiple times or may be in the config file a 
+     * Ensures that $var is a collection of $var elements, not just a
+     * single element. This is useful for using config->getSetting for an element
+     * that may be in the config multiple times or may be in the config file a
      * single time. By calling toArray, you ensure that the value you're working
      * with is an array and don't need to determine if it's an array or a scalar.
      * Note: This does not change a string into an array with one string element
@@ -652,7 +574,7 @@ class Utility extends PEAR
     }
 
     /**
-     * asArray ensures that $var is a collection elements, not just a single element
+     * Ensures that $var is a collection elements, not just a single element
      * Not the same as toArray, apparently.
      * Note: This function should be used for tags without attributes
      *
@@ -671,7 +593,7 @@ class Utility extends PEAR
     }
 
     /**
-     * Explodes an encapsulted, delimited string like 
+     * Explodes an encapsulted, delimited string like
      * 'hello','my name is \'bob\'', 'etc'
      *
      * @param string $seperator unknown
@@ -680,36 +602,36 @@ class Utility extends PEAR
      *
      * @return unknown
      *
-     * @note    Don't know what the above function comment is supposed to mean, 
-     *       so just preserving it for now. Appears to only be used 
+     * @note    Don't know what the above function comment is supposed to mean,
+     *       so just preserving it for now. Appears to only be used
      *       by NDB_Form_candidate_parameters and if so, should be moved there.
      * @cleanup
      */
     function explodeEncapsulated($seperator, $delimiter, $string)
     {
-        $state=0;
-        $output=$string;
-        $output_index=0;
+        $state        =0;
+        $output       =$string;
+        $output_index =0;
 
         for ($i=0;$i<strlen($string);$i++) {
             switch ($string[$i]) {
             case $delimiter:
                 if ($string[$i-1]!="\\") {
-                    $output=substr_replace($output, "", $output_index, 1);
+                    $output =substr_replace($output, "", $output_index, 1);
                     $output_index--;
                 }
                 break;
 
             case $seperator:
                 if ($state%2==0) {
-                    $output=substr_replace($output, "{@}", $output_index, 1);
-                    $output_index+=2;
+                    $output        =substr_replace($output, "{@}", $output_index, 1);
+                    $output_index +=2;
                 }
                 break;
             }
             $output_index++;
         }
-        $output=str_replace("\\".$delimiter, $delimiter, $output);
+        $output =str_replace("\\".$delimiter, $delimiter, $output);
         return explode("{@}", $output);
     }
 
@@ -719,7 +641,7 @@ class Utility extends PEAR
      * why this exists instead of using built-in PHP functions.
      * to be used.
      *
-     * From php.net    
+     * From php.net
      *
      * @return  The parameters passed all merged together, with keys preserved?
      * @note    Function comment written by Dave, not the author of this function.
@@ -731,7 +653,7 @@ class Utility extends PEAR
         $arg_list = func_get_args();
         foreach ((array)$arg_list as $arg) {
             foreach ((array)$arg as $K => $V) {
-                $Zoo[$K]=$V;
+                $Zoo[$K] =$V;
             }
         }
         return $Zoo;
@@ -749,7 +671,7 @@ class Utility extends PEAR
      * function will result in '' being saved as 0 for fields where
      * the backend data type is int.
      *
-     * @param array& &$arr  A reference to an array being saved to
+     * @param array  $arr   A reference to an array being saved to
      *                      the database. This array may be modified
      *                      by calls to this function.
      * @param string $field The field for which '' should be converted
@@ -757,7 +679,7 @@ class Utility extends PEAR
      *
      * @return array The same array passed in, after modifications.
      */
-    function nullifyEmpty(&$arr, $field)
+    public static function nullifyEmpty(&$arr, $field)
     {
         if ($arr[$field] === '') {
             $arr[$field] = null;
@@ -766,29 +688,9 @@ class Utility extends PEAR
     }
 
     /**
-     * Case insensitive search to see if an item is in an array
-     * from php.net comments
+     * Now that Loris requires PHP >5.3 places that use this code should be
+     * updated to use a closure.
      *
-     * @param string $item  The needle to search for
-     * @param array  $array The array to search for $item
-     *
-     * @return  True iff $item is in $array without regard to case
-     * @note    Function comment written by Dave, not the author of this function.
-     * @note    This does not appear to be used. If not, it should be removed,
-     * @cleanup ?
-     */
-    function in_array_insensitive($item, $array)
-    {
-        $item = &strtoupper($item);
-        foreach ($array as $element) {
-            if ($item == strtoupper($element)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Function (previously?) used by stats page(?) for map/reduce to extract
      * the Test_name from all the rows returned from a database call and
      * thereby convert from an array of the form
@@ -796,12 +698,12 @@ class Utility extends PEAR
      * array(0 => array('Test_name' => value))
      *
      * to
-     * 
+     *
      * array(0 => value)
      *
      *
      * If this doesn't make sense, see note.
-     * 
+     *
      * @param array $Arr A row from an associative array based by array_map
      *
      * @return  The name from the given array row.
@@ -814,19 +716,22 @@ class Utility extends PEAR
     }
 
     /**
+     * Now that Loris requires PHP >5.3 places that use this code should be
+     * updated to use a closure.
+     *
      * Function (previously?) used by stats page(?) for map/reduce to extract
      * the Full_name from all the rows returned from a database call and
-     * thereby convert from an array of the form
+     * thereby convert from an array of the form:
      *
      * array(0 => array('Full_name' => value))
      *
      * to
-     * 
+     *
      * array(0 => value)
      *
      *
      * If this doesn't make sense, see note.
-     * 
+     *
      * @param array $Arr A row from an associative array based by array_map
      *
      * @return  The name from the given array row.
@@ -846,16 +751,16 @@ class Utility extends PEAR
      */
     static function getAllInstruments()
     {
-        $Factory = NDB_Factory::singleton();
-        $DB      = $Factory->Database(); //=& Database::singleton();
+        $Factory       = NDB_Factory::singleton();
+        $DB            = $Factory->Database(); //=& Database::singleton();
         $instruments_q = $DB->pselect(
             "SELECT Test_name,Full_name FROM test_names",
             array()
         );
-        $instruments = array();
+        $instruments   = array();
         foreach ($instruments_q as $row) {
             if (isset($row['Test_name']) && isset($row['Full_name'])) {
-                $instruments[$row['Test_name']]=$row['Full_name'];
+                $instruments[$row['Test_name']] =$row['Full_name'];
             }
         }
 
@@ -865,7 +770,7 @@ class Utility extends PEAR
 
     /**
      * Gets a list of all instruments where are administered as direct data
-     * entry from subjects. 
+     * entry from subjects.
      * This should return an array in a format suitable for addSelect() from
      * NDB_Page
      *
@@ -873,13 +778,13 @@ class Utility extends PEAR
      */
     static function getDirectInstruments()
     {
-        $DB =& Database::singleton();
+        $DB            =& Database::singleton();
         $instruments_q = $DB->pselect(
             "SELECT Test_name,Full_name FROM test_names WHERE IsDirectEntry=true",
             array()
         );
         foreach ($instruments_q as $key) {
-            $instruments[$key['Test_name']]=$key['Full_name'];
+            $instruments[$key['Test_name']] =$key['Full_name'];
         }
 
         return $instruments;
@@ -893,8 +798,8 @@ class Utility extends PEAR
      */
     static function getScoredInstruments()
     {
-        $All = Utility::getAllInstruments();
-        $Scored = array();
+        $All     = Utility::getAllInstruments();
+        $Scored  = array();
         $Nothing = array();
         foreach ($All as $Instrument=>$Full_name) {
             if (Utility::getScoreColsForInstrument($Instrument) != $Nothing) {
@@ -949,7 +854,7 @@ class Utility extends PEAR
     {
         $config =& NDB_Config::singleton();
         // get the list of Subprojects
-        $column_threshold= $config->getSetting('columnThreshold');
+        $column_threshold = $config->getSetting('columnThreshold');
         return $column_threshold;
     }
 
@@ -968,17 +873,21 @@ class Utility extends PEAR
      */
     static function columnExists($test_name,$column)
     {
-        $config =& NDB_Config::singleton();
+        $config   =& NDB_Config::singleton();
         $database = $config->getSetting('database');
-        $query = "SELECT DISTINCT table_name
+        $query    = "SELECT DISTINCT table_name
             FROM information_schema.columns
-            WHERE table_name = :tn 
-            AND COLUMN_NAME = :cn 
+            WHERE table_name = :tn
+            AND COLUMN_NAME = :cn
             AND TABLE_SCHEMA = :db";
-        $DB =& Database::singleton();
+        $DB       =& Database::singleton();
         $effected = $DB->pselectOne(
             $query,
-            array('tn'=>$test_name,'cn'=>$column, 'db'=>$database)
+            array(
+             'tn' => $test_name,
+             'cn' => $column,
+             'db' => $database,
+            )
         );
         if ($effected) {
             return true;
@@ -1002,7 +911,7 @@ class Utility extends PEAR
      */
     static function getVisitLabelUsingTestName($test_name)
     {
-        $db =& Database::singleton();
+        $db    =& Database::singleton();
         $query = "SELECT DISTINCT s.visit_label FROM session s
             JOIN flag f ON (s.ID = f.SessionID)
             JOIN candidate c ON (c.Candid = s.Candid)
@@ -1010,12 +919,7 @@ class Utility extends PEAR
             WHERE s.Active = 'Y' AND c.Active= 'Y' 
             AND f.Test_name = :tn AND psc.Centerid!= '1'";
 
-        $visitlabels = $db->pselect($query, array('tn'=>$test_name));
-        if (Utility::isErrorX($visitlabels)) {
-            return PEAR::raiseError(
-                "Could not get visit label: ".$visitlabels->getMessage()
-            );
-        }
+        $visitlabels = $db->pselect($query, array('tn' => $test_name));
         return $visitlabels;
     }
     /**
@@ -1035,7 +939,7 @@ class Utility extends PEAR
         //print_r($instument);
         $instrument = $db->pselect(
             "SELECT Test_name FROM test_names WHERE Full_name =:fname",
-            array('fname'=>$fullname)
+            array('fname' => $fullname)
         );
         if (is_array($instrument) && count($instrument)) {
             //$full_name = $names[0]
@@ -1045,7 +949,7 @@ class Utility extends PEAR
     }
 
     /**
-     * Get all the sourcefrom instruments from parameter_type (which 
+     * Get all the sourcefrom instruments from parameter_type (which
      * exist in the data_integrity flag table)
      *
      * @return  Associative array of the form array('Full Name' => 'Full Name')
@@ -1106,28 +1010,28 @@ class Utility extends PEAR
                 "SELECT SourceField, Name FROM parameter_type
                 WHERE queryable='1' AND sourcefrom = :sf
                 ORDER BY Name",
-                array('sf'=>$instrument)
+                array('sf' => $instrument)
             );
         } elseif (!is_null($commentID)) { //get sourcefield using commentid
-            $instrument = $DB->pselectOne(
+            $instrument   = $DB->pselectOne(
                 "SELECT Test_name FROM flag WHERE CommentID = :cid",
-                array('cid'=>$commentID)
+                array('cid' => $commentID)
             );
             $sourcefields = $DB->pselect(
                 "SELECT SourceField, Name FROM parameter_type 
                 WHERE queryable = '1' AND sourcefrom = :instrument
                 ORDER BY Name",
-                array('instrument'=>$instrument)
+                array('instrument' => $instrument)
             );
         } elseif (!is_null($name)) { //get all source fields
             $sourcefields = $DB->pselectRow(
                 "SELECT * FROM parameter_type WHERE Name = :pn",
-                array('pn'=>$name)
+                array('pn' => $name)
             );
         }
         return $sourcefields;
     }
-    
+
 
     /**
      * Returns a list of study Visit Labels that are being used by this study.
@@ -1137,8 +1041,9 @@ class Utility extends PEAR
      * @return An associated array of study visits in the format array('VL' => 'VL')
      *         where VL is the visit label
      *
-     * @note       THIS FUNCTION USES STRING CONCATENATION TO GENERATE AN SQL STATEMENT.
-     *       IT IS VULNERABLE TO AN SQL INJECTION ATTACK.
+     * @note       THIS FUNCTION USES STRING CONCATENATION TO GENERATE AN
+     *             SQL STATEMENT.
+     *             IT IS VULNERABLE TO AN SQL INJECTION ATTACK.
      * @note       Function comment written by Dave, not the author of this function.
      * @vulnerable
      * @cleanup
@@ -1147,13 +1052,13 @@ class Utility extends PEAR
     {
         $db =& Database::singleton();
         if ($projectID != null) {
-            $ExtraProject_Criteria 
+            $ExtraProject_Criteria
                 = ' AND (c.ProjectID IS NULL OR c.ProjectID=' . $projectID . ')';
         } else {
             $ExtraProject_Criteria ='';
         }
-        $query = "SELECT DISTINCT Visit_label FROM session s 
-            JOIN candidate c ON (s.CandID = c.Candid) 
+        $query       = "SELECT DISTINCT Visit_label FROM session s
+            JOIN candidate c ON (s.CandID = c.Candid)
             JOIN psc ON (s.CenterID = psc.CenterID)
             WHERE c.Active = 'Y'
             AND s.Active = 'Y'
@@ -1161,7 +1066,7 @@ class Utility extends PEAR
             AND psc.CenterID!= '1'
             $ExtraProject_Criteria ORDER BY Visit_label";
         $visitlabels = $db->pselect($query, array());
-        $visits = array();
+        $visits      = array();
         for ($i = 0; $i < count($visitlabels); $i++) {
             $visits[$visitlabels[$i]['Visit_label']]
                 = ($visitlabels[$i]['Visit_label']);
@@ -1192,10 +1097,10 @@ class Utility extends PEAR
             $test_names = $DB->pselect(
                 "SELECT DISTINCT Test_name_display FROM test_battery 
                 WHERE Visit_label=:vl",
-                array('vl'=>$visit_label)
+                array('vl' => $visit_label)
             );
         } else {
-            $test_names= $DB->pselect(
+            $test_names = $DB->pselect(
                 "SELECT DISTINCT t.Full_name as Test_name_display FROM session s
                 JOIN candidate c ON (c.candid=s.candid)
                 JOIN psc ON (s.CenterID = psc.CenterID)
@@ -1204,22 +1109,19 @@ class Utility extends PEAR
                 WHERE c.Active='Y' AND s.Active='Y' AND s.Visit_label =:vl 
                 AND psc.CenterID != '1' AND c.PSCID != '%scanner%'
                 ORDER BY t.Full_name",
-                array('vl'=>$visit_label)
+                array('vl' => $visit_label)
             );
         }
 
-        if (Utility::isErrorX($test_names)) {
-            return PEAR::raiseError("DB Error: ".$instruments->getMessage());
-        }
         return $test_names;
     }
 
     /**
-     * Determine whether an array is a numeric (normal) array or an 
+     * Determine whether an array is a numeric (normal) array or an
      * associative (hashtable) array.
      *
      * @param array $arr The array to be checked for numeric keys.
-     * 
+     *
      * @return boolean True if the given parameter is an array with
      *                 numeric keys, false otherwise.
      */
@@ -1235,5 +1137,53 @@ class Utility extends PEAR
         return isset($arr[0]);
     }
 
+    /**
+     * This function takes two strings. If one string has a
+     * suffix which is a prefix of the other, it will return
+     * the part of the second string minus the common
+     * suffix/prefix.
+     *
+     * This is mostly used for removing pieces of a relative
+     * URL in a way that can be concatinated to an absolute
+     * URL without duplicating components. ie.
+     *
+     * removeCommonAffix("http://localhost/foo", "/foo/bar")
+     *
+     * would return "/bar", which can then be concatenated
+     * to "http://localhost/foo" to form the URL
+     * "http://loclahost/foo/bar"
+     *
+     * @param string $suffixStr The string which may contain a common affix
+     *                          at the end of the string
+     * @param string $prefixStr The string to compare the suffix string to
+     *
+     * @return string $prefixStr minus the largest common piece of $suffixStr
+     */
+    function removeCommonAffix($suffixStr, $prefixStr)
+    {
+        $lastFound = '';
+        // Start from the end of $suffixStr and work backwords, to make sure
+        // it fails fast in the event that there's nothing in common.
+        for ($i = strlen($suffixStr)-1; $i >= 0; $i -= 1) {
+            $piece = substr($suffixStr, $i);
+            $found = strpos($prefixStr, $piece);
+            if ($found === 0) {
+                // The current substring starts at index 0 in prefixStr, so we
+                // know that it's a prefix. Keep track of it.
+                $lastFound = $piece;
+            } else if ($found === false) {
+                // The current substring doesn't appear anywhere in
+                // $prefixStr, so return the last known complete prefix.
+                // There's no chance that a larger string is going to
+                // be a prefix either.
+                return substr($prefixStr, strlen($lastFound));
+            } else {
+                // Otherwise, the string appears somewhere, but isn't at the
+                // beginning of the string. Keep going because this might be
+                // the middle of a larger prefix.
+            }
+        }
+        return $prefixStr;
+    }
 }
 ?>

@@ -12,8 +12,8 @@
  *  @category Main
  *  @package  Main
  *  @author   Dave MacFarlane <david.macfarlane2@mcgill.ca>
- *  @license  GPLv3
- *  @link     https://www.github.com/aces/Loris-Trunk/
+ *  @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
+ *  @link     https://www.github.com/aces/Loris/
  */
 require_once 'NDB_Factory.class.inc';
 require_once 'User.class.inc';
@@ -27,27 +27,36 @@ require_once 'CouchDB.class.inc';
  *  @category Main
  *  @package  Main
  *  @author   Dave MacFarlane <david.macfarlane2@mcgill.ca>
- *  @license  GPLv3
- *  @link     https://www.github.com/aces/Loris-Trunk/
+ *  @license  http://www.gnu.org/licenses/gpl-3.0.txt GPLv3
+ *  @link     https://www.github.com/aces/Loris/
  */
 class NDB_Factory
 {
     private static $_testdb = null;
-    private static $_db = null;
+    private static $_db     = null;
 
     private static $_couchdb = null;
-    private static $_user = null;
+    private static $_user    = null;
+
     var $Testing; // Whether or not Mock objects should be returned instead of
                   // real ones
     //
     private static $_config = null;
 
     /**
+     * Settings object
+     * A proxy to NDB_Config
+     *
+     * @var Settings object
+     */
+    private static $_settings = null;
+
+    /**
      * Sets whether the factory should return real objects or testing objects
      *
      * @param boolean $val Whether testing should be enabled
      *
-     * @return none
+     * @return void
      */
     function setTesting($val)
     {
@@ -56,7 +65,7 @@ class NDB_Factory
 
     /**
      * Returns a single factory object. This must be used instead of being
-     * constructed directly so that the testing suite and Loris code are 
+     * constructed directly so that the testing suite and Loris code are
      * using the same factory.
      *
      * @return NDB_Factory A single instance of NDB_Factory
@@ -74,25 +83,30 @@ class NDB_Factory
      * Reset all of the private variables of the factory to the default
      * state. Used between testing runs.
      *
-     * @return none
+     * @return void
      */
     function reset()
     {
         self::$_testdb = null;
-        self::$_db= null;
+        self::$_db     = null;
 
         self::$_couchdb = null;
-        self::$_user = null;
+        self::$_user    = null;
 
         self::$_config = null;
+
+        self::$_settings = null;
     }
 
     /**
-     * Return either a real or mock NDB_Config object.
+     * Return either a real or mock NDB_Config object depending on testing
+     * status of this factory object.
+     *
+     * @param string $configfile Location of XML file to parse config from
      *
      * @return NDB_Config A config singleton
      */
-    function config()
+    function config($configfile = "../project/config.xml")
     {
         if (self::$_config !== null) {
             return self::$_config;
@@ -101,11 +115,25 @@ class NDB_Factory
             Mock::generate("NDB_Config");
             $config = new MockNDB_Config();
         } else {
-            $config = new NDB_Config();
+            $config = NDB_Config::singleton($configfile);
         }
 
         self::$_config = $config;
-        $config->load();
+        $config->load($configfile);
+        return $config;
+    }
+
+    /**
+     * Set config
+     * (Can used for injecting test doubles)
+     *
+     * @param NDB_Config $config config object
+     *
+     * @return NDB_Config config object which was passed in
+     */
+    public function setConfig(NDB_Config $config)
+    {
+        self::$_config = $config;
         return $config;
     }
 
@@ -133,10 +161,10 @@ class NDB_Factory
      * Explicitly set the user singleton that is being used by the factory
      *
      * @param User $user The user to be returned by the factory
-     * 
+     *
      * @return User The same user that was passed in.
      */
-    function setUser($user)
+    public function setUser(User $user)
     {
         self::$_user = $user;
         return $user;
@@ -163,17 +191,32 @@ class NDB_Factory
             if ($db_ref !== null) {
                 return $db_ref;
             }
-            self::$_db = new Database();
+            self::$_db = Database::singleton();
         }
         $config = $this->config();
-        $dbc = $config->getSetting('database');
+        $dbc    = $config->getSetting('database');
         $db_ref->connect(
             $dbc['database'],
             $dbc['username'],
             $dbc['password'],
-            $dbc['host'], true
+            $dbc['host'],
+            true
         );
         return $db_ref;
+    }
+
+    /**
+     * Explicitly set the database singleton that is being used by the factory
+     * (Can be used for injecting test doubles)
+     *
+     * @param Database $db Database object
+     *
+     * @return Database same Database object which was passed in
+     */
+    public function setDatabase(Database $db)
+    {
+        self::$_db = $db;
+        return $db;
     }
 
     /**
@@ -191,13 +234,48 @@ class NDB_Factory
                 'CouchDB',
                 'MockCouchDBWrap',
                 /* mock out the functions that make HTTP requests */
-                array('_getRelativeURL', '_postRelativeURL', '_postURL', '_getURL')
+                array(
+                 '_getRelativeURL',
+                 '_postRelativeURL',
+                 '_postURL',
+                 '_getURL',
+                )
             );
             self::$_couchdb = new MockCouchDBWrap();
         } else {
             self::$_couchdb = CouchDB::singleton(); //new CouchDB();
         }
         return self::$_couchdb;
+    }
+
+    /**
+     * Explicitly set the Couch DB singleton that is being used by the factory
+     * (Can be used for injecting test doubles)
+     *
+     * @param CouchDB $couchDB CouchDB database wrapper
+     *
+     * @return CouchDB
+     */
+    public function setCouchDB(CouchDB $couchDB)
+    {
+        self::$_couchdb = $couchDB;
+        return $couchDB;
+    }
+
+    /**
+     * Returns a singleton settings object
+     *
+     * @param string $configfile Location of XML file to parse config from
+     *
+     * @return Settings setting object
+     */
+    public function settings($configfile = "../project/config.xml")
+    {
+        if (self::$_settings !== null) {
+            return self::$_settings;
+        }
+        self::$_settings = new Settings($this->config($configfile));
+        return self::$_settings;
     }
 }
 ?>
