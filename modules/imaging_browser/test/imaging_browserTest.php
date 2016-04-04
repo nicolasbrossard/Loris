@@ -160,16 +160,15 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
             )
         );
 
-        // @codingStandardsIgnoreStart
+        $file1      = 'assembly/506145/V1/mri/native/loris-MRI_506145_V1_t2_001.mnc';
+        $seriesUID1 = '1.3.12.2.1107.5.2.32.35049.2014021711090977356751313.0.0.0';
         $this->DB->insert(
             'files',
             array(
              'FileID'                => 1,
              'SessionID'             => 999998,
-             'File'                  => 'assembly/506145/V1/mri/native/' .
-              'loris-MRI_506145_V1_t2_001.mnc',
-             'SeriesUID'             => '1.3.12.2.1107.5.2.32.35049.' .
-               '2014021711090977356751313.0.0.0',
+             'File'                  => $file1,
+             'SeriesUID'             => $seriesUID1,
              'EchoTime'              => 0.011,
              'CoordinateSpace'       => 'native',
              'OutputType'            => 'native',
@@ -186,18 +185,16 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
              'TarchiveSource'        => 263,
             )
         );
-        // @codingStandardsIgnoreEnd
 
-        // @codingStandardsIgnoreStart
+        $file2      = 'assembly/506145/V1/mri/native/loris-MRI_506145_V1_t1_001.mnc';
+        $seriesUID2 = '1.3.12.2.1107.5.2.32.35049.2014021711090977356751313.0.0.0';
         $this->DB->insert(
             'files',
             array(
              'FileID'                => 2,
              'SessionID'             => 999999,
-             'File'                  => 'assembly/506145/V1/mri/native/' .
-               'loris-MRI_506145_V1_t1_001.mnc',
-             'SeriesUID'             => '1.3.12.2.1107.5.2.32.35049.' .
-               '2014021711090977356751313.0.0.0',
+             'File'                  => $file2,
+             'SeriesUID'             => $seriesUID2,
              'EchoTime'              => 0.011,
              'CoordinateSpace'       => 'native',
              'OutputType'            => 'native',
@@ -214,7 +211,6 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
              'TarchiveSource'        => 263,
             )
         );
-        // @codingStandardsIgnoreStart
 
         $this->DB->insert(
             'mri_acquisition_dates',
@@ -232,33 +228,33 @@ class ImagingBrowserTestIntegrationTest extends LorisIntegrationTest
             )
         );
 
+        $seriesUID3 = '1.3.12.2.1107.5.2.32.35049.2014021711090977356751313.0.0.0';
         $this->DB->insert(
             'files_qcstatus',
             array(
              'FileQCID'          => 1,
              'FileID'            => 1,
-             'SeriesUID'         => '1.3.12.2.1107.5.2.32.35049.' .
-               '2014021711090977356751313.0.0.0',
+             'SeriesUID'         => $seriesUID3,
              'EchoTime'          => 0.011,
              'QCStatus'          => null,
              'QCFirstChangeTime' => 1455040145,
              'QCLastChangeTime'  => 1455040145,
-             'Selected'          => 't2'
+             'Selected'          => 't2',
             )
         );
 
+        $seriesUID4 = '1.3.12.2.1107.5.2.32.35049.2014021711090977356751313.0.0.0';
         $this->DB->insert(
             'files_qcstatus',
             array(
              'FileQCID'          => 2,
              'FileID'            => 2,
-             'SeriesUID'         => '1.3.12.2.1107.5.2.32.35049.' .
-               '2014021711090977356751313.0.0.0',
+             'SeriesUID'         => $seriesUID4,
              'EchoTime'          => 0.011,
              'QCStatus'          => null,
              'QCFirstChangeTime' => 1455040145,
              'QCLastChangeTime'  => 1455040145,
-             'Selected'          => 't1'
+             'Selected'          => 't1',
             )
         );
 
