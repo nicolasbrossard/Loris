@@ -17,6 +17,35 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `acknowledgements`
+--
+
+DROP TABLE IF EXISTS `acknowledgements`;
+CREATE TABLE `acknowledgements` (
+  `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `ordering` varchar(255) DEFAULT NULL,
+  `full_name` varchar(255) DEFAULT NULL,
+  `citation_name` varchar(255) DEFAULT NULL,
+  `title` enum('') DEFAULT NULL,
+  `affiliations` varchar(255) DEFAULT NULL,
+  `degrees` varchar(255) DEFAULT NULL,
+  `roles` varchar(255) DEFAULT NULL,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `present` enum('Yes', 'No') DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `acknowledgements`
+-- 
+
+LOCK TABLES `acknowledgements` WRITE;
+/*!40000 ALTER TABLE `acknowledgements` DISABLE KEYS */;
+/*!40000 ALTER TABLE `acknowledgements` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `candidate`
 --
 
@@ -440,7 +469,8 @@ CREATE TABLE `files_qcstatus` (
     EchoTime double DEFAULT NULL,
     QCStatus enum('Pass', 'Fail'),
     QCFirstChangeTime int(10) unsigned,
-    QCLastChangeTime int(10) unsigned
+    QCLastChangeTime int(10) unsigned,
+    Selected VARCHAR(255)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
@@ -862,7 +892,6 @@ CREATE TABLE `parameter_type` (
 LOCK TABLES `parameter_type` WRITE;
 /*!40000 ALTER TABLE `parameter_type` DISABLE KEYS */;
 INSERT INTO `parameter_type` VALUES 
-	(1,'Selected','varchar(10)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,0,0),
 	(2,'Geometric_distortion','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
 	(3,'Intensity_artifact','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
 	(4,'Movement_artifacts_within_scan','text',NULL,NULL,NULL,NULL,'parameter_file',NULL,NULL,0,0),
@@ -1154,6 +1183,7 @@ CREATE TABLE `test_battery` (
   `Visit_label` varchar(255) default NULL,
   `CenterID` int(11) default NULL,
   `firstVisit` enum('Y','N') default NULL,
+  `instr_order` tinyint(4) default NULL,
   PRIMARY KEY  (`ID`),
   KEY `age_test` (`AgeMinDays`,`AgeMaxDays`,`Test_name`),
   KEY `FK_test_battery_1` (`Test_name`),
@@ -1203,6 +1233,7 @@ DROP TABLE IF EXISTS `test_subgroups`;
 CREATE TABLE `test_subgroups` (
   `ID` int(11) unsigned NOT NULL auto_increment,
   `Subgroup_name` varchar(255) default NULL,
+  `group_order` tinyint(4) default NULL,
   PRIMARY KEY  (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -1212,7 +1243,7 @@ CREATE TABLE `test_subgroups` (
 
 LOCK TABLES `test_subgroups` WRITE;
 /*!40000 ALTER TABLE `test_subgroups` DISABLE KEYS */;
-INSERT INTO test_subgroups VALUES (1, 'Instruments');
+INSERT INTO test_subgroups VALUES (1, 'Instruments', NULL);
 /*!40000 ALTER TABLE `test_subgroups` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1805,7 +1836,9 @@ CREATE TABLE `genome_loc` (
   `EndLoc` int(11) DEFAULT NULL,
   `Size` int(11) DEFAULT NULL,
   `StartLoc` int(11) DEFAULT NULL,
-  PRIMARY KEY (`GenomeLocID`)
+  PRIMARY KEY (`GenomeLocID`),
+  UNIQUE KEY (Chromosome, StartLoc, EndLoc),
+  INDEX (Chromosome, EndLoc)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- Table structure for table `gene`
@@ -1830,7 +1863,8 @@ CREATE TABLE `genotyping_platform` (
   `Description` text,
   `TechnologyType` varchar(255) DEFAULT NULL,
   `Provider` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`PlatformID`)
+  PRIMARY KEY (`PlatformID`),
+  UNIQUE KEY `Name` (`Name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
@@ -1949,6 +1983,67 @@ CREATE TABLE `genomic_files` (
   CONSTRAINT `FK_genomic_files_1` FOREIGN KEY (`CandID`) REFERENCES `candidate` (`CandID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=43 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `genomic_sample_candidate_rel`;
+CREATE TABLE `genomic_sample_candidate_rel` (
+  `sample_label` varchar(100) NOT NULL,
+  `CandID` int(6) NOT NULL,
+  PRIMARY KEY (sample_label, CandID),
+  UNIQUE KEY `sample_label` (`sample_label`),
+  FOREIGN KEY (CandID)
+    REFERENCES candidate(CandID)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+COMMENT = '';
+
+DROP TABLE IF EXISTS `genomic_cpg_annotation`;
+CREATE TABLE `genomic_cpg_annotation` (
+  `cpg_name` varchar(100) NOT NULL,
+  `location_id` bigint(20) NOT NULL,
+  `address_id_a` int unsigned NULL,
+  `probe_seq_a` varchar(100) NULL, 
+  `address_id_b` int unsigned NULL,
+  `probe_seq_b` varchar(100) NULL,
+  `design_type` varchar(20) NULL,
+  `color_channel` enum ('Red', 'Grn') NULL,
+  `genome_build` varchar(40) NULL,
+  `probe_snp_10` varchar(40) NULL,
+  `gene_name` text NULL,
+  `gene_acc_num` text NULL,
+  `gene_group` text NULL,
+  `island_loc` varchar(100) NULL,
+  `island_relation` enum ('island', 'n_shelf', 'n_shore', 's_shelf', 's_shore') NULL, 
+  `fantom_promoter_loc`varchar(100) NULL,
+  `dmr` enum ('CDMR', 'DMR', 'RDMR') NULL,
+  `enhancer` tinyint(1) NULL,
+  `hmm_island_loc` varchar(100) NULL,
+  `reg_feature_loc` varchar(100) NULL,
+  `reg_feature_group` varchar(100) NULL,
+  `dhs` tinyint(1) NULL,
+  `platform_id` bigint(20) NULL,
+  PRIMARY KEY (cpg_name),
+  FOREIGN KEY (location_id)
+    REFERENCES genome_loc(`GenomeLocID`)
+    ON DELETE RESTRICT,
+  FOREIGN KEY (platform_id)
+    REFERENCES genotyping_platform(`PlatformID`)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+COMMENT = '';
+
+DROP TABLE IF EXISTS `genomic_cpg`;
+CREATE TABLE `genomic_cpg` (
+  `sample_label` varchar(100) NOT NULL,
+  `cpg_name` varchar(100) NOT NULL,
+  `beta_value` decimal(4,3) DEFAULT NULL,
+  PRIMARY KEY (sample_label, cpg_name),
+  FOREIGN KEY (sample_label)
+    REFERENCES genomic_sample_candidate_rel(sample_label)
+    ON DELETE RESTRICT,
+  FOREIGN KEY (cpg_name)
+    REFERENCES genomic_cpg_annotation(cpg_name)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
+COMMENT = '';
 
 CREATE TABLE `certification_training` (
     `ID` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2023,3 +2118,29 @@ INSERT INTO ExternalLinks (LinkTypeID, LinkText, LinkURL) VALUES
     (2,  'GitHub', 'https://github.com/aces'),
     (3,  'Loris Website', 'http://www.loris.ca');
 
+DROP TABLE IF EXISTS empty_queries;
+CREATE TABLE empty_queries (
+ ID int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ query text NOT NULL,
+ timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS `data_release`;
+CREATE TABLE `data_release` (
+ `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+ `file_name` varchar(255),
+ `version` varchar(255),
+ `upload_date` date,
+ PRIMARY KEY (`id`)
+);
+
+DROP TABLE IF EXISTS `data_release_permissions`;
+CREATE TABLE `data_release_permissions` (
+ `userid` int(10) unsigned NOT NULL,
+ `data_release_id` int(10) unsigned NOT NULL,
+ PRIMARY KEY (`userid`, `data_release_id`),
+ KEY `FK_userid` (`userid`),
+ KEY `FK_data_release_id` (`data_release_id`),
+ CONSTRAINT `FK_userid` FOREIGN KEY (`userid`) REFERENCES `users` (`ID`),
+ CONSTRAINT `FK_data_release_id` FOREIGN KEY (`data_release_id`) REFERENCES `data_release` (`id`)
+);

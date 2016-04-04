@@ -38,6 +38,11 @@ class SinglePointLogin
     var $_username = null;
 
     /**
+     * To carry the error messages
+     */
+    var $_lastError = null;
+
+    /**
      * Dumps the login form
      *
      * @return void
@@ -140,7 +145,7 @@ class SinglePointLogin
         $smarty = new Smarty_neurodb;
         $smarty->assign($tpl_data);
         $smarty->display('password_expiry.tpl');
-        die();
+        return false;
     }
 
 

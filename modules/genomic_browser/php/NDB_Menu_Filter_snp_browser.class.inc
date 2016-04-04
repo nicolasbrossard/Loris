@@ -66,7 +66,7 @@ class NDB_Menu_Filter_SNP_Browser extends NDB_Menu_Filter
         // set the class variables
         $this->columns = array(
                           'psc.Name AS PSC',
-                          'candidate.CandID AS DCCID',
+                          'LPAD(candidate.CandID, 6, "0") AS DCCID',
                           'candidate.PSCID',
                           'candidate.Gender',
                           'cohort.SubprojectID as Subproject',
@@ -394,7 +394,8 @@ class NDB_Menu_Filter_SNP_Browser extends NDB_Menu_Filter
 
                 //Show the URL to the timepoint list on PSCID field
                 if ($key == 'PSCID' && $user->hasPermission('access_all_profiles')) {
-                    $this->tpl_data['items'][$x][$i]['DCCID'] = $item['DCCID'];
+                    $this->tpl_data['items'][$x][$i]['DCCID']
+                        = str_pad($item['DCCID'], 6, '0', STR_PAD_LEFT);
                 }
                 $this->tpl_data['items'][$x][$i]['name']  = $key;
                 $this->tpl_data['items'][$x][$i]['value'] = $val;
@@ -451,6 +452,8 @@ class NDB_Menu_Filter_SNP_Browser extends NDB_Menu_Filter
             ) {
 
                  $query .= " AND $field = :v_$prepared_key";
+            } elseif ($field == "candidate.CandID") {
+                $query .= " AND $field = " . ltrim($val, '0');
             } else {
                  $query .= " AND $field LIKE CONCAT('%', :v_$prepared_key, '%') ";
             }

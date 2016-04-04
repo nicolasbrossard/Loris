@@ -6,6 +6,7 @@
         <li class="statsTab"><a class="statsTabLink" href="{$baseurl}/genomic_browser/?submenu=gwas_browser">GWAS</a></li>
         <li class="statsTab"><a class="statsTabLink" href="{$baseurl}/genomic_browser/?submenu=snp_browser">SNP</a></li>
         <li class="statsTab active"><a class="statsTabLink" id="onLoad"><strong>CNV</strong></a></li>
+        <li class="statsTab"><a class="statsTabLink" href="{$baseurl}/genomic_browser/?submenu=cpg_browser">Methylation</a></li>
       </ul>
       <br>
     </div>
@@ -258,7 +259,7 @@
             {/if}
             {if $items[item][piece].DCCID != "" AND $items[item][piece].name == "PSCID"}
               {assign var="PSCID" value=$items[item][piece].value}
-               <a href="{$baseurl}/timepoint_list&candID={$items[item][piece].DCCID}">{$items[item][piece].value}</a>
+               <a href="{$baseurl}/{$items[item][piece].DCCID}/">{$items[item][piece].value}</a>
             {elseif $items[item][piece].name == "Chromosome"}
               {assign var="chromValue" value=$items[item][piece].value}
               {$chromValue} 
